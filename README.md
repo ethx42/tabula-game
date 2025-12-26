@@ -9,6 +9,17 @@ This generator creates 15 distinct 4x4 game boards from 36 unique Colombian cult
 - No duplicate items within a single board
 - Mathematical validation of distribution requirements
 
+## Algorithm
+
+The generator uses a **Spread Distribution algorithm** with the following strategy:
+
+1. **Greedy Assignment**: Items are assigned to boards one at a time
+2. **Overlap Minimization**: Prefers boards that minimize maximum pairwise overlap
+3. **Duplicate Repair**: Detects and fixes any duplicate boards via swapping
+4. **Frequency Constraints**: Maintains exact frequency requirements
+
+If OR-Tools is available (requires Python ≤ 3.12), the generator uses a **CP-SAT constraint solver** that optimally minimizes the maximum overlap between any two boards.
+
 ## Features
 
 - **36 Unique Items**: Colombian food, culture, landmarks, and traditions
@@ -16,13 +27,21 @@ This generator creates 15 distinct 4x4 game boards from 36 unique Colombian cult
 - **Balanced Distribution**: 
   - Items 1-24: appear 7 times across all boards
   - Items 25-36: appear 6 times across all boards
-- **Automatic Validation**: Three comprehensive tests ensure correctness
+- **Automatic Validation**: Four comprehensive tests ensure correctness
 - **JSON Export**: Boards exported in structured format for easy integration
+- **Deterministic**: Same output every time (no random shuffling)
 
 ## Requirements
 
 - Python 3.6 or higher
-- Standard library only (no external dependencies)
+- Standard library only (no external dependencies required)
+
+### Optional (for optimal diversity)
+
+```bash
+# Requires Python <= 3.12
+pip install ortools>=9.8.0
+```
 
 ## Usage
 
@@ -32,11 +51,12 @@ Run the script:
 python3 loteria_generator.py
 ```
 
-Or make it executable:
+Or with a virtual environment:
 
 ```bash
-chmod +x loteria_generator.py
-./loteria_generator.py
+python3 -m venv venv
+source venv/bin/activate
+python loteria_generator.py
 ```
 
 ## Output
@@ -50,7 +70,7 @@ The script will:
 
 ## Validation Tests
 
-The script automatically runs three tests:
+The script automatically runs four tests:
 
 ### Test 1: Frequency Validation
 Verifies that each item appears the correct number of times:
@@ -63,12 +83,10 @@ Ensures each board contains 16 unique items (no duplicates)
 ### Test 3: No Identical Boards
 Confirms all 15 boards are distinct from each other
 
-## Algorithm
-
-1. **Master Pool Creation**: Creates a pool of 240 items with correct frequencies
-2. **Board Generation**: Uses backtracking to ensure no duplicates within boards
-3. **Fallback Strategy**: If backtracking fails, uses swapping algorithm
-4. **Validation**: Runs comprehensive tests to verify correctness
+### Test 4: Pairwise Overlap Analysis
+Analyzes how many items are shared between pairs of boards:
+- Reports min, max, and average overlap
+- Shows the highest-overlap board pairs
 
 ## JSON Output Format
 
@@ -78,6 +96,7 @@ Confirms all 15 boards are distinct from each other
   "total_boards": 15,
   "board_size": "4x4",
   "items_per_board": 16,
+  "algorithm": "Spread Distribution",
   "boards": [
     {
       "board_number": 1,
@@ -97,6 +116,13 @@ Traditional Colombian foods, cultural icons, and landmarks including:
 - Alejandro Obregón
 - Bocas de Ceniza
 - And 31 more unique items
+
+## Mathematical Verification
+
+```
+(24 items × 7 occurrences) + (12 items × 6 occurrences) = 240 slots
+15 boards × 16 items per board = 240 slots ✓
+```
 
 ## License
 
