@@ -56,8 +56,8 @@ This application solves that problem using **Integer Linear Programming (ILP)** 
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/loteria-game.git
-cd loteria-game
+git clone git@github.com:ethx42/loteria-board-generator.git
+cd loteria-board-generator
 
 # Install dependencies
 npm install
