@@ -9,6 +9,30 @@
  */
 
 import type { Room, Connection, Server } from "partykit/server";
+import { createDevLogger } from "../src/lib/utils/dev-logger";
+
+// Scoped logger for GameRoom (only outputs in development)
+const baseLog = createDevLogger("GameRoom");
+
+// Helper to add timestamps to logs
+function getTimestamp() {
+  const now = new Date();
+  return `${now.toLocaleTimeString()}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+}
+
+// Wrap logger with timestamps
+const log = {
+  log: (roomId: string, msg: string, ...args: unknown[]) => 
+    baseLog.log(`[${getTimestamp()}] [${roomId}] ${msg}`, ...args),
+  info: (roomId: string, msg: string, ...args: unknown[]) => 
+    baseLog.info(`[${getTimestamp()}] [${roomId}] ${msg}`, ...args),
+  warn: (roomId: string, msg: string, ...args: unknown[]) => 
+    baseLog.warn(`[${getTimestamp()}] [${roomId}] ${msg}`, ...args),
+  error: (roomId: string, msg: string, ...args: unknown[]) => 
+    baseLog.error(`[${getTimestamp()}] [${roomId}] ${msg}`, ...args),
+  debug: (roomId: string, msg: string, ...args: unknown[]) => 
+    baseLog.debug(`[${getTimestamp()}] [${roomId}] ${msg}`, ...args),
+};
 
 // ============================================================================
 // TYPES
@@ -206,8 +230,11 @@ export default class GameRoom implements Server {
    */
   onConnect(conn: Connection): void {
     const role = getClientRole(conn);
+    
+    log.info(this.room.id, `Connection attempt - role: ${role || "NONE"}, uri: ${conn.uri}`);
 
     if (!role) {
+      log.warn(this.room.id, `Invalid role, closing connection`);
       send(conn, {
         type: "ERROR",
         code: "INVALID_ROLE",
@@ -228,10 +255,14 @@ export default class GameRoom implements Server {
    * Called when a client disconnects.
    */
   onClose(conn: Connection): void {
+    log.info(this.room.id, `Connection closed - id: ${conn.id}`);
+    
     if (conn.id === this.state.hostId) {
       this.handleHostDisconnect();
     } else if (conn.id === this.state.controllerId) {
       this.handleControllerDisconnect();
+    } else {
+      log.debug(this.room.id, `Unknown connection closed: ${conn.id}`);
     }
   }
 
@@ -317,16 +348,20 @@ export default class GameRoom implements Server {
       });
     }
 
-    console.log(`[${this.room.id}] Host connected: ${conn.id}`);
+    log.info(this.room.id, `Host connected: ${conn.id}`);
   }
 
   private handleControllerConnect(conn: Connection): void {
+    log.info(this.room.id, `Controller attempting to connect: ${conn.id}`);
+    log.debug(this.room.id, `Current state - hostId: ${this.state.hostId}, controllerId: ${this.state.controllerId}`);
+    
     // Check if there's already a controller
     if (this.state.controllerId) {
       const existingController = this.room.getConnection(
         this.state.controllerId
       );
       if (existingController) {
+        log.warn(this.room.id, `Controller already connected, rejecting`);
         // Offer takeover option
         send(conn, {
           type: "ERROR",
@@ -337,10 +372,12 @@ export default class GameRoom implements Server {
         return;
       }
       // Previous controller is gone, allow new one
+      log.info(this.room.id, `Previous controller gone, allowing new one`);
     }
 
     // Check if host exists
     if (!this.state.hostId) {
+      log.warn(this.room.id, `No host found, rejecting controller`);
       send(conn, {
         type: "ERROR",
         code: "ROOM_NOT_FOUND",
@@ -373,11 +410,11 @@ export default class GameRoom implements Server {
       });
     }
 
-    console.log(`[${this.room.id}] Controller connected: ${conn.id}`);
+    log.info(this.room.id, `Controller connected: ${conn.id}`);
   }
 
   private handleHostDisconnect(): void {
-    console.log(`[${this.room.id}] Host disconnected`);
+    log.error(this.room.id, `Host disconnected`);
 
     this.state.hostId = null;
 
@@ -389,7 +426,7 @@ export default class GameRoom implements Server {
   }
 
   private handleControllerDisconnect(): void {
-    console.log(`[${this.room.id}] Controller disconnected`);
+    log.error(this.room.id, `Controller disconnected`);
 
     this.state.controllerId = null;
 
