@@ -512,7 +512,7 @@ function JoinPageContent() {
       }}
       soundActions={{
         onToggleLocal: () => {},
-        onSetHost: () => {},
+        onToggleHost: () => {},
         onToggleBoth: () => {},
         onAcceptSync: () => {},
         onDeclineSync: () => {},
