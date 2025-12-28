@@ -301,4 +301,3 @@ export function CurrentCard({
 }
 
 export default CurrentCard;
-

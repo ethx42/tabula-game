@@ -170,7 +170,9 @@ type Listener = () => void;
  * Creates a standalone state store for the Host UI state machine.
  * This can be used outside of React or shared across components.
  */
-export function createHostUIStore(initialState: HostUIState = INITIAL_HOST_UI_STATE) {
+export function createHostUIStore(
+  initialState: HostUIState = INITIAL_HOST_UI_STATE
+) {
   let state = initialState;
   const listeners = new Set<Listener>();
 
@@ -381,4 +383,3 @@ export function useHostUIState() {
 export function resetHostUIStore() {
   globalStore = null;
 }
-
