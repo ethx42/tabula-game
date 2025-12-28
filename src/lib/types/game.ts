@@ -16,7 +16,7 @@
 /**
  * ItemDefinition
  *
- * Represents a single card in the Lotería deck.
+ * Represents a single card in the Tabula deck.
  * Extends the basic Item concept with educational content and theming.
  *
  * @example
@@ -87,8 +87,8 @@ export interface DeckTheme {
  * @example
  * ```ts
  * const deck: DeckDefinition = {
- *   id: "loteria-universal",
- *   name: "Lotería Universal",
+ *   id: "tabula-universal",
+ *   name: "Tabula Universal",
  *   language: "es",
  *   items: [...],
  *   theme: { primaryColor: "#8B4513" }
@@ -411,7 +411,7 @@ export function isGameStatus(value: unknown): value is GameStatus {
 
 /**
  * Type guard to check if a string is a valid ISO 639-1 language code.
- * Common codes used in Lotería: es (Spanish), en (English), pt (Portuguese)
+ * Common codes used in Tabula: es (Spanish), en (English), pt (Portuguese)
  */
 export function isValidLanguageCode(value: string): boolean {
   // ISO 639-1 is always 2 lowercase letters

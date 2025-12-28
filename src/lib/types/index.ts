@@ -1,5 +1,5 @@
 /**
- * Lotería Game - Core Types
+ * Tabula Game - Core Types
  * Complete type definitions for board generation and gameplay
  */
 
@@ -32,7 +32,7 @@ export {
 // ITEM TYPES
 // ============================================================================
 
-/** Single item in the Lotería */
+/** Single item in the Tabula game */
 export interface Item {
   id: string;
   name: string;
@@ -91,7 +91,7 @@ export interface GeneratorConfig {
   seed?: number;
 }
 
-/** Default Lotería items (Barranquilla edition) */
+/** Default Tabula items (Barranquilla edition) */
 export const DEFAULT_ITEMS: Item[] = [
   { id: "01", name: "PATACÓN DE GUINEO VERDE" },
   { id: "02", name: "ALEGRÍA DE COCO Y ANÍS" },

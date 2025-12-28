@@ -57,7 +57,7 @@ const minimalTheme: DeckTheme = {
 
 const validDeck: DeckDefinition = {
   id: "demo-deck",
-  name: "Demo Lotería",
+  name: "Demo Tabula",
   language: "es",
   items: [validItem, validItemWithOptionals],
   description: "A demo deck for testing",
