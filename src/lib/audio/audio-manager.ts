@@ -2,14 +2,14 @@
  * Audio Manager
  *
  * Singleton class for managing game audio with Web Audio API.
- * Handles browser autoplay policies and user preference persistence.
+ * Handles browser autoplay policies gracefully.
  *
  * Features:
  * - Lazy initialization (only loads on first user interaction)
- * - Preference persistence via localStorage
  * - Subscription system for React integration (useSyncExternalStore)
  * - Graceful fallback when audio fails
  * - Multiple sound support for future expansion
+ * - Sound always starts enabled (no persistence needed)
  *
  * @module lib/audio/audio-manager
  * @see TABULA_V4_DEVELOPMENT_PLAN §5 Phase 2B
@@ -200,7 +200,7 @@ class AudioManager {
           .webkitAudioContext;
 
       if (!AudioContextClass) {
-        console.warn("[AudioManager] Web Audio API not supported");
+        log.warn("Web Audio API not supported");
         return;
       }
 
@@ -214,9 +214,7 @@ class AudioManager {
             log.debug(`Loading sound: ${type} from ${path}`);
             const response = await fetch(path);
             if (!response.ok) {
-              console.warn(
-                `[AudioManager] Failed to fetch ${path}: ${response.status}`
-              );
+              log.warn(`Failed to fetch ${path}: ${response.status}`);
               return;
             }
             const arrayBuffer = await response.arrayBuffer();
@@ -224,7 +222,7 @@ class AudioManager {
             this.buffers.set(type as SoundType, audioBuffer);
             log.debug(`Loaded sound: ${type}, buffer duration: ${audioBuffer.duration}s`);
           } catch (error) {
-            console.warn(`[AudioManager] Failed to load ${path}:`, error);
+            log.warn(`Failed to load ${path}:`, error);
           }
         })
       );
@@ -233,7 +231,7 @@ class AudioManager {
       log.log(`Initialization complete, buffers: ${this.buffers.size}`);
       this.notifyListeners(); // Notify subscribers of initialization
     } catch (error) {
-      console.warn("[AudioManager] Initialization failed:", error);
+      log.warn("Initialization failed:", error);
       // Silent fail - audio is enhancement, not critical
     }
   }
@@ -289,7 +287,7 @@ class AudioManager {
       gainNode.connect(this.context.destination);
       source.start(0);
     } catch (error) {
-      console.warn("[AudioManager] Playback failed:", error);
+      log.warn("Playback failed:", error);
     }
   }
 
