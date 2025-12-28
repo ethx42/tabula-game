@@ -42,7 +42,7 @@ const validItemWithOptionals: ItemDefinition = {
 
 const validDeck: DeckDefinition = {
   id: "test-deck",
-  name: "Test Lotería",
+  name: "Test Tabula",
   language: "es",
   items: [validItem, validItemWithOptionals],
   description: "A test deck",
