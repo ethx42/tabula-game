@@ -228,6 +228,7 @@ export interface ErrorMessage {
 export type ErrorCode =
   | "ROOM_NOT_FOUND"
   | "ROOM_FULL"
+  | "CONTROLLER_ALREADY_CONNECTED"
   | "INVALID_MESSAGE"
   | "UNAUTHORIZED"
   | "INTERNAL_ERROR";

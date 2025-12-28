@@ -235,7 +235,7 @@ function JoinPageContent() {
   // Handle connection status changes
   useEffect(() => {
     log.debug(
-      `Connection status: ${socket.status}, page state: ${state.status}`
+      `Connection status: ${socket.status}, page state: ${state.status}, error: ${socket.error}`
     );
 
     if (socket.status === "connecting") {
@@ -266,14 +266,29 @@ function JoinPageContent() {
     ) {
       setState((current) => {
         if (current.status !== "connecting") return current;
+        
+        // Use specific error message from socket if available
+        let errorMessage = "Connection lost. The host may have disconnected.";
+        if (socket.error) {
+          // Check for room not found error
+          if (socket.error.toLowerCase().includes("not found") || 
+              socket.error.toLowerCase().includes("no host")) {
+            errorMessage = "This room doesn't exist or the host has left. Please check the code and try again.";
+          } else if (socket.error.toLowerCase().includes("already connected")) {
+            errorMessage = "Another controller is already connected to this room.";
+          } else {
+            errorMessage = socket.error;
+          }
+        }
+        
         return {
           status: "error",
-          message: "Connection lost. The host may have disconnected.",
+          message: errorMessage,
           roomId: current.roomId,
         };
       });
     }
-  }, [socket.status, state.status]);
+  }, [socket.status, socket.error, state.status]);
 
   // Handle state updates from host
   useEffect(() => {
@@ -287,6 +302,34 @@ function JoinPageContent() {
       };
     });
   }, [socket.lastStateUpdate]);
+
+  // Listen for server error messages (e.g., ROOM_NOT_FOUND, CONTROLLER_ALREADY_CONNECTED)
+  useEffect(() => {
+    const unsubscribe = socket.onMessage((message) => {
+      if (message.type === "ERROR") {
+        log.warn(`Server error: ${message.code} - ${message.message}`);
+        
+        let errorMessage = message.message || "An error occurred.";
+        if (message.code === "ROOM_NOT_FOUND") {
+          errorMessage = "This room doesn't exist or the host has left. Please check the code and try again.";
+        } else if (message.code === "CONTROLLER_ALREADY_CONNECTED") {
+          errorMessage = "Another controller is already connected to this room.";
+        }
+        
+        setState((current) => {
+          if (current.status === "error") return current; // Don't overwrite existing error
+          return {
+            status: "error",
+            message: errorMessage,
+            roomId: current.status === "connecting" || current.status === "connected" 
+              ? current.roomId 
+              : undefined,
+          };
+        });
+      }
+    });
+    return unsubscribe;
+  }, [socket]);
 
   // Listen for sound preference messages from Host
   useEffect(() => {
