@@ -3,6 +3,31 @@
  * Complete type definitions for board generation and gameplay
  */
 
+// Re-export game types from the game module for convenience
+export type {
+  ItemDefinition,
+  DeckDefinition,
+  DeckTheme,
+  GameGeneratedBoard,
+  GameStatus,
+  ConnectionState,
+  GameSession,
+  HostUIMode,
+  HostUIState,
+  HostUIEvent,
+} from "./game";
+
+export {
+  isItemDefinition,
+  isDeckDefinition,
+  isDeckTheme,
+  isGameStatus,
+  isValidLanguageCode,
+  createConnectionState,
+  createHostUIState,
+  INITIAL_HOST_UI_STATE,
+} from "./game";
+
 // ============================================================================
 // ITEM TYPES
 // ============================================================================
