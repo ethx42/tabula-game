@@ -211,6 +211,19 @@ function JoinPageContent() {
     null
   );
 
+  // Rollback timeout for optimistic host toggle (3 seconds)
+  const hostToggleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hostTogglePrevStateRef = useRef<boolean | null>(null);
+
+  // Cleanup rollback timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hostToggleTimeoutRef.current) {
+        clearTimeout(hostToggleTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const clearPendingSoundSync = useCallback(() => {
     setPendingSoundSync(null);
   }, []);
@@ -266,21 +279,25 @@ function JoinPageContent() {
     ) {
       setState((current) => {
         if (current.status !== "connecting") return current;
-        
+
         // Use specific error message from socket if available
         let errorMessage = "Connection lost. The host may have disconnected.";
         if (socket.error) {
           // Check for room not found error
-          if (socket.error.toLowerCase().includes("not found") || 
-              socket.error.toLowerCase().includes("no host")) {
-            errorMessage = "This room doesn't exist or the host has left. Please check the code and try again.";
+          if (
+            socket.error.toLowerCase().includes("not found") ||
+            socket.error.toLowerCase().includes("no host")
+          ) {
+            errorMessage =
+              "This room doesn't exist or the host has left. Please check the code and try again.";
           } else if (socket.error.toLowerCase().includes("already connected")) {
-            errorMessage = "Another controller is already connected to this room.";
+            errorMessage =
+              "Another controller is already connected to this room.";
           } else {
             errorMessage = socket.error;
           }
         }
-        
+
         return {
           status: "error",
           message: errorMessage,
@@ -308,22 +325,25 @@ function JoinPageContent() {
     const unsubscribe = socket.onMessage((message) => {
       if (message.type === "ERROR") {
         log.warn(`Server error: ${message.code} - ${message.message}`);
-        
+
         let errorMessage = message.message || "An error occurred.";
         if (message.code === "ROOM_NOT_FOUND") {
-          errorMessage = "This room doesn't exist or the host has left. Please check the code and try again.";
+          errorMessage =
+            "This room doesn't exist or the host has left. Please check the code and try again.";
         } else if (message.code === "CONTROLLER_ALREADY_CONNECTED") {
-          errorMessage = "Another controller is already connected to this room.";
+          errorMessage =
+            "Another controller is already connected to this room.";
         }
-        
+
         setState((current) => {
           if (current.status === "error") return current; // Don't overwrite existing error
           return {
             status: "error",
             message: errorMessage,
-            roomId: current.status === "connecting" || current.status === "connected" 
-              ? current.roomId 
-              : undefined,
+            roomId:
+              current.status === "connecting" || current.status === "connected"
+                ? current.roomId
+                : undefined,
           };
         });
       }
@@ -363,6 +383,12 @@ function JoinPageContent() {
 
       // ACK from Host confirming sound state (response to our command OR initial state)
       if (message.type === "SOUND_PREFERENCE_ACK") {
+        // Clear rollback timeout - ACK received successfully
+        if (hostToggleTimeoutRef.current) {
+          clearTimeout(hostToggleTimeoutRef.current);
+          hostToggleTimeoutRef.current = null;
+          log.info("Host toggle ACK received, rollback cancelled");
+        }
         setHostSoundEnabled(message.enabled);
       }
     });
@@ -468,11 +494,26 @@ function JoinPageContent() {
 
     log.log(`Toggle Host: ${currentHostState} -> ${newHostState}`);
 
+    // Clear any existing rollback timeout
+    if (hostToggleTimeoutRef.current) {
+      clearTimeout(hostToggleTimeoutRef.current);
+    }
+
+    // Save previous state for potential rollback
+    hostTogglePrevStateRef.current = currentHostState;
+
     // Optimistically update UI before server confirms
     setHostSoundEnabled(newHostState);
 
     // Send command to Host
     sound.controllerSetHostOnly(newHostState);
+
+    // Set rollback timeout (3 seconds) - if no ACK, revert to previous state
+    hostToggleTimeoutRef.current = setTimeout(() => {
+      log.warn(`Host toggle timeout - no ACK received, rolling back to: ${hostTogglePrevStateRef.current}`);
+      setHostSoundEnabled(hostTogglePrevStateRef.current);
+      hostToggleTimeoutRef.current = null;
+    }, 3000);
   }, [hostSoundEnabled, sound]);
 
   // ===========================================================================
