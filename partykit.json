@@ -1,0 +1,7 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "loteria-tabula",
+  "main": "party/game.ts",
+  "compatibilityDate": "2024-12-01"
+}
+
