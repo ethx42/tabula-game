@@ -20,7 +20,11 @@ import { QRPairing } from "../_components/qr-pairing";
 import { loadDemoDeck } from "@/lib/game/deck-loader";
 import { useGameSocket } from "@/lib/realtime/partykit-client";
 import { isGameCommand } from "@/lib/realtime/types";
+import { createDevLogger } from "@/lib/utils/dev-logger";
 import type { GameSession, DeckDefinition, GameStatus, ItemDefinition } from "@/lib/types/game";
+
+// Dev-only logger
+const log = createDevLogger("HostPage");
 
 // ============================================================================
 // TYPES
@@ -130,6 +134,9 @@ function HostPageContent() {
 
   // Track if we've sent initial state to controller
   const hasSentInitialState = useRef(false);
+  
+  // Track if session has been initialized (prevent duplicate init)
+  const hasInitialized = useRef(false);
 
   // WebSocket connection
   const {
@@ -155,7 +162,15 @@ function HostPageContent() {
   // Helper to broadcast state
   const broadcastState = useCallback(
     (session: GameSession) => {
-      if (connectionStatus !== "connected" || !controllerConnected) return;
+      if (connectionStatus !== "connected" || !controllerConnected) {
+        log.debug("Not broadcasting - no controller connected");
+        return;
+      }
+
+      log.log("Broadcasting state to controller", {
+        currentIndex: session.currentIndex,
+        status: session.status,
+      });
 
       sendStateUpdate({
         currentItem: session.currentItem,
@@ -262,6 +277,7 @@ function HostPageContent() {
   useEffect(() => {
     const unsubscribe = onMessage((message) => {
       if (isGameCommand(message)) {
+        log.log(`Received command from controller: ${message.type}`);
         switch (message.type) {
           case "DRAW_CARD":
             actionsRef.current.doDrawCard();
@@ -282,15 +298,23 @@ function HostPageContent() {
     return unsubscribe;
   }, [onMessage]);
 
-  // Initialize session
+  // Initialize session (runs once)
   useEffect(() => {
+    // Guard against multiple initializations
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     async function initSession() {
       try {
+        log.info(`Initializing session for room: ${roomId}`);
         const deck = await loadDemoDeck();
         const session = createInitialSession(deck, roomId);
+        log.log("Session created", { deckItems: deck.items.length });
         setState({ status: "pairing", session });
         connect();
       } catch (error) {
+        log.error("Failed to initialize session", error);
+        hasInitialized.current = false; // Allow retry on error
         setState({
           status: "error",
           message: error instanceof Error ? error.message : "Failed to load deck",
@@ -304,6 +328,8 @@ function HostPageContent() {
   // Handle controller connection status
   useEffect(() => {
     if (state.status !== "pairing" && state.status !== "playing") return;
+
+    log.debug(`Controller connected status: ${controllerConnected}`);
 
     setState((prev) => {
       if (prev.status !== "pairing" && prev.status !== "playing") return prev;
@@ -321,6 +347,7 @@ function HostPageContent() {
 
     // When controller connects, enter game mode (FR-004)
     if (controllerConnected && state.status === "pairing") {
+      log.log("Controller connected! Transitioning to playing mode");
       setState((prev) => {
         if (prev.status !== "pairing") return prev;
         return { status: "playing", session: prev.session };

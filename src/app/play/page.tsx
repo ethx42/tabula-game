@@ -30,7 +30,7 @@ export default function PlayLandingPage() {
           Tabula
         </h1>
         <p className="mb-12 text-lg text-amber-300/70">
-          Your digital Lotería companion
+          Your digital Tabula companion
         </p>
 
         {/* Options */}

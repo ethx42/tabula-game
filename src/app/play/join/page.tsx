@@ -17,7 +17,106 @@ import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { RemoteController } from "../_components/remote-controller";
 import { useGameSocket } from "@/lib/realtime/partykit-client";
+import { createDevLogger } from "@/lib/utils/dev-logger";
 import type { GameStatus, ItemDefinition } from "@/lib/types/game";
+
+// Dev-only logger
+const log = createDevLogger("JoinPage");
+
+// ============================================================================
+// DEBUG LOG CAPTURE (temporary for debugging)
+// ============================================================================
+const debugLogs: string[] = [];
+const MAX_DEBUG_LOGS = 50;
+
+function captureLog(message: string) {
+  const timestamp = new Date().toLocaleTimeString();
+  debugLogs.unshift(`[${timestamp}] ${message}`);
+  if (debugLogs.length > MAX_DEBUG_LOGS) {
+    debugLogs.pop();
+  }
+}
+
+// Override console methods to capture logs (only in dev)
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  const originalDebug = console.debug;
+  const originalInfo = console.info;
+  
+  console.log = (...args) => {
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    if (msg.includes(">>>") || msg.includes("GameSocket") || msg.includes("JoinPage")) {
+      captureLog(msg);
+    }
+    originalLog.apply(console, args);
+  };
+  
+  console.warn = (...args) => {
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    captureLog(`⚠️ ${msg}`);
+    originalWarn.apply(console, args);
+  };
+  
+  console.error = (...args) => {
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    captureLog(`❌ ${msg}`);
+    originalError.apply(console, args);
+  };
+  
+  console.debug = (...args) => {
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    if (msg.includes(">>>") || msg.includes("GameSocket") || msg.includes("JoinPage")) {
+      captureLog(`🔍 ${msg}`);
+    }
+    originalDebug.apply(console, args);
+  };
+  
+  console.info = (...args) => {
+    const msg = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+    if (msg.includes(">>>") || msg.includes("GameSocket") || msg.includes("JoinPage")) {
+      captureLog(`ℹ️ ${msg}`);
+    }
+    originalInfo.apply(console, args);
+  };
+}
+
+function DebugPanel() {
+  const [, forceUpdate] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(n => n + 1), 500);
+    return () => clearInterval(interval);
+  }, []);
+  
+  if (process.env.NODE_ENV !== "development") return null;
+  
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black/90 text-xs text-green-400 font-mono">
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full py-1 bg-gray-800 text-white"
+      >
+        {isExpanded ? "▼ Hide Debug" : "▲ Show Debug"} ({debugLogs.length} logs)
+      </button>
+      {isExpanded && (
+        <div className="max-h-48 overflow-y-auto p-2">
+          {debugLogs.length === 0 ? (
+            <div className="text-gray-500">No logs yet...</div>
+          ) : (
+            debugLogs.map((log, i) => (
+              <div key={i} className="border-b border-gray-800 py-0.5 break-all">
+                {log}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ============================================================================
 // TYPES
@@ -63,7 +162,7 @@ function JoinForm({ onJoin, isLoading, error }: JoinFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-amber-950 via-amber-900 to-amber-950 p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b from-amber-950 via-amber-900 to-amber-950 p-6">
       <div className="w-full max-w-sm">
         {/* Logo/Title */}
         <div className="mb-8 text-center">
@@ -127,7 +226,7 @@ function JoinForm({ onJoin, isLoading, error }: JoinFormProps) {
 
 function LoadingScreen({ message = "Connecting..." }: { message?: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-amber-950 via-amber-900 to-amber-950">
+    <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-amber-950 via-amber-900 to-amber-950">
       <div className="text-center">
         <div className="mb-4 mx-auto h-12 w-12 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
         <p className="font-serif text-xl text-amber-200">{message}</p>
@@ -148,12 +247,24 @@ function JoinPageContent() {
 
   const [state, setState] = useState<JoinPageState>(() => {
     if (roomFromUrl) {
+      log.info(`Initial state: connecting to ${roomFromUrl}`);
       return { status: "connecting", roomId: roomFromUrl };
     }
     return { status: "entering" };
   });
 
+  // Track component mount/unmount
+  useEffect(() => {
+    log.info("JoinPageContent MOUNTED");
+    return () => {
+      log.warn("JoinPageContent UNMOUNTING");
+    };
+  }, []);
+
   const hasAutoConnected = useRef(false);
+  
+  // Track if we've ever attempted a connection (to know when disconnected is a failure vs initial state)
+  const hasAttemptedConnection = useRef(false);
 
   // Determine current room ID for WebSocket
   const currentRoomId =
@@ -179,38 +290,84 @@ function JoinPageContent() {
     debug: true,
   });
 
-  // Handle connection status changes
+  // Handle connection status changes - transition to connected when WebSocket connects
   useEffect(() => {
-    if (state.status !== "connecting") return;
+    log.debug(`Connection status: ${connectionStatus}, page state: ${state.status}`, { 
+      hasAttemptedConnection: hasAttemptedConnection.current,
+    });
+
+    // Track that we're attempting/have attempted connection
+    if (connectionStatus === "connecting") {
+      hasAttemptedConnection.current = true;
+    }
 
     // Show controller UI as soon as WebSocket is connected
     if (connectionStatus === "connected") {
-      setState({
-        status: "connected",
-        roomId: state.roomId,
-        gameState: {
-          currentItem: null,
-          currentIndex: -1,
-          totalItems: 0,
-          status: "ready",
-          historyCount: 0,
-        },
+      log.log("WebSocket connected!");
+      hasAttemptedConnection.current = true;
+      
+      // Only transition if we're still in connecting state
+      setState((current) => {
+        if (current.status !== "connecting") {
+          log.debug("Already transitioned, skipping");
+          return current;
+        }
+        log.log("Transitioning to connected state");
+        return {
+          status: "connected",
+          roomId: current.roomId,
+          gameState: {
+            currentItem: null,
+            currentIndex: -1,
+            totalItems: 0,
+            status: "ready",
+            historyCount: 0,
+          },
+        };
       });
-    } else if (connectionStatus === "disconnected") {
-      const timeout = setTimeout(() => {
-        setState({
+    } else if (connectionStatus === "disconnected" && hasAttemptedConnection.current) {
+      // Only treat as error if we already tried to connect and got disconnected
+      setState((current) => {
+        if (current.status !== "connecting") return current;
+        log.warn("Disconnected after connection attempt, transitioning to error");
+        return {
           status: "error",
-          message: "Could not connect to room. Please check the code.",
-          roomId: state.roomId,
-        });
-      }, 5000); // Give more time for connection
-      return () => clearTimeout(timeout);
+          message: "Connection lost. The host may have disconnected.",
+          roomId: current.roomId,
+        };
+      });
     }
-  }, [connectionStatus, state]);
+  }, [connectionStatus]); // Only depend on connectionStatus, use functional setState
+
+  // Timeout for initial connection attempt
+  useEffect(() => {
+    if (state.status !== "connecting") return;
+
+    log.debug("Starting connection timeout (10s)");
+    const timeout = setTimeout(() => {
+      // Only error if we're still in connecting state
+      setState((current) => {
+        if (current.status !== "connecting") return current;
+        log.error("Connection timeout - transitioning to error state");
+        return {
+          status: "error",
+          message: "Could not connect to room. Please check the code and try again.",
+          roomId: current.roomId,
+        };
+      });
+    }, 10000); // 10 seconds timeout for initial connection
+
+    return () => clearTimeout(timeout);
+  }, [state.status, state.status === "connecting" ? (state as { roomId: string }).roomId : null]);
 
   // Handle state updates from host
   useEffect(() => {
     if (!lastStateUpdate) return;
+
+    log.log("Received state update from host", { 
+      currentIndex: lastStateUpdate.currentIndex,
+      status: lastStateUpdate.status,
+    });
 
     setState((prev) => {
       if (prev.status !== "connected") return prev;
@@ -221,35 +378,57 @@ function JoinPageContent() {
     });
   }, [lastStateUpdate]);
 
-  // Manual join handler
-  const handleJoin = useCallback(
-    (roomCode: string) => {
-      // Update URL without full navigation (for bookmarking/sharing)
-      window.history.replaceState(null, "", `/play/join?room=${roomCode}`);
-      // Set state to trigger connect
-      setState({ status: "connecting", roomId: roomCode });
-    },
-    []
-  );
+  // Effect to connect when we enter "connecting" state
+  // IMPORTANT: Define refs BEFORE they're used in callbacks
+  const connectRef = useRef(connect);
+  connectRef.current = connect;
+  
+  const hasCalledConnectRef = useRef(false);
 
-  // Track the room we're trying to connect to
-  const connectingRoomRef = useRef<string | null>(null);
-
-  // Effect to connect when we enter "connecting" state with a new room
+  // Manual join handler - defined AFTER refs it uses
+  const handleJoin = useCallback((roomCode: string) => {
+    log.log(`>>> handleJoin called for: ${roomCode}`);
+    // Reset connection tracking for new room
+    hasAttemptedConnection.current = false;
+    hasCalledConnectRef.current = false;
+    log.debug(`>>> hasCalledConnectRef reset to false`);
+    // Update URL without full navigation (for bookmarking/sharing)
+    window.history.replaceState(null, "", `/play/join?room=${roomCode}`);
+    // Set state to trigger connect
+    setState({ status: "connecting", roomId: roomCode });
+    log.debug(`>>> setState called with connecting/${roomCode}`);
+  }, []);
+  
   useEffect(() => {
-    if (state.status === "connecting") {
-      const roomId = state.roomId;
-      // Only connect if this is a new room we haven't tried yet
-      if (connectingRoomRef.current !== roomId) {
-        connectingRoomRef.current = roomId;
-        // Small delay to allow the config ref to update with new roomId
-        const timeout = setTimeout(() => {
-          connect();
-        }, 100);
-        return () => clearTimeout(timeout);
-      }
+    log.warn(`>>> Connect useEffect running - status: ${state.status}, hasCalledConnect: ${hasCalledConnectRef.current}`);
+    
+    // Not in connecting state - reset tracking
+    if (state.status !== "connecting") {
+      log.warn(`>>> Not connecting status (${state.status}), resetting hasCalledConnectRef`);
+      hasCalledConnectRef.current = false;
+      return;
     }
-  }, [state, connect, currentRoomId]);
+    
+    // Already called connect for this session - skip
+    if (hasCalledConnectRef.current) {
+      log.warn(`>>> Already called connect, skipping`);
+      return;
+    }
+    
+    const roomId = state.roomId;
+    log.warn(`>>> Initiating connection to room: ${roomId}`);
+    hasCalledConnectRef.current = true;
+    
+    // Call connect immediately - no delay needed
+    log.warn(`>>> Calling connect() NOW for ${roomId}`);
+    connectRef.current();
+    
+    return () => {
+      log.warn(`>>> Connect useEffect CLEANUP`);
+      // Reset so next mount will try again
+      hasCalledConnectRef.current = false;
+    };
+  }, [state.status, state.status === "connecting" ? (state as { roomId: string }).roomId : null]);
 
   const handleRetryConnection = useCallback(() => {
     if (state.status === "error" && state.roomId) {
@@ -261,6 +440,8 @@ function JoinPageContent() {
   const handleTryDifferentCode = useCallback(() => {
     disconnect();
     hasAutoConnected.current = false;
+    hasAttemptedConnection.current = false;
+    hasCalledConnectRef.current = false;
     setState({ status: "entering" });
     router.push("/play/join");
   }, [disconnect, router]);
@@ -271,33 +452,41 @@ function JoinPageContent() {
   }
 
   if (state.status === "connecting") {
-    return <LoadingScreen message={`Connecting to ${state.roomId}...`} />;
+    return (
+      <>
+        <LoadingScreen message={`Connecting to ${state.roomId}...`} />
+        <DebugPanel />
+      </>
+    );
   }
 
   if (state.status === "error") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-amber-950 via-amber-900 to-amber-950 p-6">
-        <div className="max-w-md rounded-2xl bg-red-900/50 p-6 text-center">
-          <h1 className="mb-4 font-serif text-2xl font-bold text-red-200">
-            Connection Error
-          </h1>
-          <p className="text-red-300">{state.message}</p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <button
-              onClick={handleTryDifferentCode}
-              className="rounded-full bg-amber-800/50 px-4 py-2 font-medium text-amber-200"
-            >
-              Try Different Code
-            </button>
-            <button
-              onClick={handleRetryConnection}
-              className="rounded-full bg-amber-500 px-4 py-2 font-semibold text-amber-950"
-            >
-              Retry
-            </button>
+      <>
+        <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-amber-950 via-amber-900 to-amber-950 p-6 pb-52">
+          <div className="max-w-md rounded-2xl bg-red-900/50 p-6 text-center">
+            <h1 className="mb-4 font-serif text-2xl font-bold text-red-200">
+              Connection Error
+            </h1>
+            <p className="text-red-300">{state.message}</p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                onClick={handleTryDifferentCode}
+                className="rounded-full bg-amber-800/50 px-4 py-2 font-medium text-amber-200"
+              >
+                Try Different Code
+              </button>
+              <button
+                onClick={handleRetryConnection}
+                className="rounded-full bg-amber-500 px-4 py-2 font-semibold text-amber-950"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+        <DebugPanel />
+      </>
     );
   }
 
@@ -306,7 +495,9 @@ function JoinPageContent() {
     <RemoteController
       roomId={state.roomId}
       gameState={state.gameState}
-      connectionStatus={connectionStatus === "connected" ? "connected" : "reconnecting"}
+      connectionStatus={
+        connectionStatus === "connected" ? "connected" : "reconnecting"
+      }
       onDrawCard={drawCard}
       onPause={pauseGame}
       onResume={resumeGame}

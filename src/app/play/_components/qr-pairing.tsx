@@ -13,6 +13,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Check, Smartphone } from "lucide-react";
 import { useState, useCallback } from "react";
+import { devWarn } from "@/lib/utils/dev-logger";
 
 interface QRPairingProps {
   /** The 4-character room code */
@@ -45,7 +46,7 @@ export function QRPairing({
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
-      console.warn("Clipboard API not available");
+      devWarn("QRPairing", "Clipboard API not available");
     }
   }, [roomCode]);
 

@@ -20,11 +20,14 @@ import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GameSession, ItemDefinition } from "@/lib/types/game";
 import { useHostUIState } from "@/lib/game/state-machine";
+import { createDevLogger } from "@/lib/utils/dev-logger";
 import { CurrentCard } from "./current-card";
 import { TextPanel } from "./text-panel";
 import { HistoryStrip } from "./history-strip";
 import { ControlsBar } from "./controls-bar";
 import { HistoryModal } from "./history-modal";
+
+const log = createDevLogger("HostDisplay");
 
 // ============================================================================
 // TYPES
@@ -124,7 +127,7 @@ export function HostDisplay({
   const handleHistoryCardClick = useCallback(
     (item: ItemDefinition, index: number) => {
       // Could navigate to specific card or show details
-      console.log("History card clicked:", item.name, "at index:", index);
+      log.debug(`History card clicked: ${item.name} at index: ${index}`);
     },
     []
   );
@@ -277,7 +280,7 @@ export function HostDisplay({
           >
             <div className="text-center">
               <h2 className="font-serif text-4xl font-bold text-amber-100">
-                🎉 ¡Lotería!
+                🎉 ¡Tabula!
               </h2>
               <p className="mt-4 text-xl text-amber-300">
                 All {totalCards} cards have been called
