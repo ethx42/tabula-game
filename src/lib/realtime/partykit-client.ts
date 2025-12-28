@@ -118,8 +118,8 @@ export type UseGameSocketReturn = GameSocketState &
 // CONSTANTS
 // ============================================================================
 
-/** Default Partykit host for development */
-const DEFAULT_DEV_HOST = "localhost:1999";
+/** Partykit port for development */
+const PARTYKIT_DEV_PORT = "1999";
 
 /** Ping interval for connection health (ms) */
 const PING_INTERVAL = 30000;
@@ -137,6 +137,7 @@ const RECONNECT_CONFIG = {
 
 /**
  * Gets the Partykit host URL.
+ * In development, uses the same hostname as the current page (so mobile works).
  * In production, this should be your deployed Partykit URL.
  */
 function getPartyHost(configHost?: string): string {
@@ -147,8 +148,15 @@ function getPartyHost(configHost?: string): string {
     return process.env.NEXT_PUBLIC_PARTYKIT_HOST;
   }
 
-  // Default to local dev server
-  return DEFAULT_DEV_HOST;
+  // In the browser, use the same hostname as the current page
+  // This allows mobile devices on the same network to connect
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    return `${hostname}:${PARTYKIT_DEV_PORT}`;
+  }
+
+  // Fallback for SSR or non-browser environments
+  return `localhost:${PARTYKIT_DEV_PORT}`;
 }
 
 /**
