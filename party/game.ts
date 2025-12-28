@@ -885,16 +885,25 @@ export default class GameRoom implements Server {
    * @direction Host→Server→Controller
    */
   private handleSoundPreferenceAck(msg: SoundPreferenceAckMessage, sender: Connection): void {
+    log.log(this.room.id, `Received SOUND_PREFERENCE_ACK from Host: enabled=${msg.enabled}`);
+    
     // Only Host can send ACK
     if (sender.id !== this.state.hostId) {
+      log.warn(this.room.id, `ACK rejected - sender is not host`);
       return;
     }
 
     // Relay to Controller
     if (this.state.controllerId) {
       const controller = this.room.getConnection(this.state.controllerId);
-      send(controller, msg);
-      log.debug(this.room.id, `Sound preference ACK relayed to controller: enabled=${msg.enabled}`);
+      if (controller) {
+        send(controller, msg);
+        log.log(this.room.id, `ACK relayed to controller: enabled=${msg.enabled}`);
+      } else {
+        log.warn(this.room.id, `Cannot relay ACK - controller connection not found`);
+      }
+    } else {
+      log.warn(this.room.id, `Cannot relay ACK - no controller connected`);
     }
   }
 }
