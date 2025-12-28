@@ -6,6 +6,11 @@
  * Mobile-optimized controller interface for untethered game control.
  * Designed for one-handed operation with thumb-reachable controls.
  *
+ * ## Design:
+ * - Pure presentational component
+ * - Sound logic handled by parent via useSoundSync hook
+ * - Receives all state and callbacks as props
+ *
  * Layout Zones (per SRD §5.2):
  * - Top: Connection status
  * - Middle: Mini card preview
@@ -20,10 +25,13 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, History, RotateCcw, LogOut } from "lucide-react";
 import type { GameStatus, ItemDefinition } from "@/lib/types/game";
+import type { SoundSourceType } from "@/lib/audio";
 import { ConnectionStatusIndicator, type ConnectionStatus } from "./connection-status";
 import { DrawButton } from "./draw-button";
 import { MiniCard } from "./mini-card";
 import { HistoryModal } from "./history-modal";
+import { SoundSyncModal } from "@/components/sound-sync-modal";
+import { SoundControlMenu } from "@/components/sound-control-menu";
 
 // ============================================================================
 // TYPES
@@ -38,6 +46,46 @@ export interface ControllerGameState {
   totalItems: number;
   status: GameStatus;
   historyCount: number;
+}
+
+/**
+ * Sound sync state passed from parent (from useSoundSync hook)
+ */
+export interface ControllerSoundState {
+  /** Whether sound is enabled locally on Controller */
+  isLocalEnabled: boolean;
+
+  /** Whether sound is enabled on Host (null if unknown) */
+  isHostEnabled: boolean | null;
+
+  /** Whether there's a pending sync request from Host */
+  hasPendingSync: boolean;
+
+  /** The pending sync details (if any) */
+  pendingSync: { enabled: boolean; source: SoundSourceType } | null;
+}
+
+/**
+ * Sound sync actions passed from parent (from useSoundSync hook)
+ */
+export interface ControllerSoundActions {
+  /** Toggle sound on this device only */
+  onToggleLocal: () => void;
+
+  /** Set sound on Host (explicit enable/disable) */
+  onSetHost: (enabled: boolean) => void;
+
+  /** Toggle sound on both devices */
+  onToggleBoth: () => void;
+
+  /** Accept pending sync from Host */
+  onAcceptSync: () => void;
+
+  /** Decline pending sync from Host */
+  onDeclineSync: () => void;
+
+  /** Dismiss sync prompts for this session */
+  onDismissSync: () => void;
 }
 
 interface RemoteControllerProps {
@@ -70,6 +118,13 @@ interface RemoteControllerProps {
 
   /** Whether reduced motion is preferred */
   reducedMotion?: boolean;
+
+  // v4.0: Sound (from useSoundSync)
+  /** Sound state from useSoundSync */
+  sound: ControllerSoundState;
+
+  /** Sound actions from useSoundSync */
+  soundActions: ControllerSoundActions;
 }
 
 // ============================================================================
@@ -136,6 +191,8 @@ export function RemoteController({
   onRetryConnection,
   onDisconnect,
   reducedMotion = false,
+  sound,
+  soundActions,
 }: RemoteControllerProps) {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
 
@@ -248,6 +305,17 @@ export function RemoteController({
             />
           )}
 
+          {/* Sound Control Menu (v4.0) */}
+          <SoundControlMenu
+            isLocalEnabled={sound.isLocalEnabled}
+            isHostEnabled={sound.isHostEnabled}
+            onToggleLocal={soundActions.onToggleLocal}
+            onSetHost={soundActions.onSetHost}
+            onToggleBoth={soundActions.onToggleBoth}
+            size="md"
+            className="min-w-[72px] min-h-[72px]"
+          />
+
           {/* Disconnect */}
           {onDisconnect && (
             <SecondaryButton
@@ -278,12 +346,21 @@ export function RemoteController({
       </footer>
 
       {/* History Modal - Note: Controller doesn't have full history, just count */}
-      {/* In a full implementation, we'd request history from host or cache it locally */}
       <HistoryModal
         isOpen={isHistoryOpen}
         onClose={handleCloseHistory}
-        history={[]} // Controller doesn't have history items, only count
+        history={[]}
         currentItem={gameState.currentItem}
+        reducedMotion={reducedMotion}
+      />
+
+      {/* v4.0: Sound Sync Modal - Shows when Host changes sound preference */}
+      <SoundSyncModal
+        isOpen={sound.hasPendingSync}
+        hostSoundEnabled={sound.pendingSync?.enabled ?? false}
+        onAccept={soundActions.onAcceptSync}
+        onDecline={soundActions.onDeclineSync}
+        onDismiss={soundActions.onDismissSync}
         reducedMotion={reducedMotion}
       />
     </div>

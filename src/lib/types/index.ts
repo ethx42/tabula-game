@@ -28,6 +28,29 @@ export {
   INITIAL_HOST_UI_STATE,
 } from "./game";
 
+// Re-export board types for v4.0 features
+export type {
+  BoardSize,
+  BoardGenerationStats,
+  BoardDefinition,
+  BoardsManifest,
+  BoardPrediction,
+  PredictionSummary,
+} from "./boards";
+
+export {
+  BOARD_SIZE_PRESETS,
+  isBoardSize,
+  formatBoardSize,
+  parseBoardSize,
+  getBoardSlots,
+  validateBoardDimensions,
+  isBoardGenerationStats,
+  isBoardDefinition,
+  inferBoardSize,
+  isBoardsManifest,
+} from "./boards";
+
 // ============================================================================
 // ITEM TYPES
 // ============================================================================

@@ -10,7 +10,10 @@
  * - ControlsBar with auto-hide behavior
  * - HistoryModal for full history view
  *
- * Implements the Host UI State Machine for mode management.
+ * ## Design:
+ * - Pure presentational component
+ * - Sound logic handled by parent via useSoundSync hook
+ * - Receives callbacks for sound changes
  *
  * @see SRD §5.1 Host Display Layout
  * @see SRD §2.4 Host UI State Machine
@@ -51,6 +54,12 @@ interface HostDisplayProps {
 
   /** Callback to end session */
   onDisconnect?: () => void;
+
+  /** v4.0: Sound enabled state (from useSoundSync) */
+  isSoundEnabled?: boolean;
+
+  /** v4.0: Callback when sound toggle clicked (from useSoundSync.hostToggle) */
+  onSoundToggle?: () => void;
 
   /** Whether user prefers reduced motion */
   reducedMotion?: boolean;
@@ -94,6 +103,8 @@ export function HostDisplay({
   onResume,
   onReset,
   onDisconnect,
+  isSoundEnabled,
+  onSoundToggle,
   reducedMotion: forcedReducedMotion,
 }: HostDisplayProps) {
   const {
@@ -126,7 +137,6 @@ export function HostDisplay({
 
   const handleHistoryCardClick = useCallback(
     (item: ItemDefinition, index: number) => {
-      // Could navigate to specific card or show details
       log.debug(`History card clicked: ${item.name} at index: ${index}`);
     },
     []
@@ -326,6 +336,8 @@ export function HostDisplay({
         onOpenHistory={handleOpenHistory}
         onHoverBottom={handleHoverBottom}
         onDisconnect={onDisconnect}
+        isSoundEnabled={isSoundEnabled}
+        onSoundToggle={onSoundToggle}
         reducedMotion={reducedMotion}
       />
 
@@ -342,4 +354,3 @@ export function HostDisplay({
 }
 
 export default HostDisplay;
-

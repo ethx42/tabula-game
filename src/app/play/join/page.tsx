@@ -504,6 +504,20 @@ function JoinPageContent() {
       onReset={resetGame}
       onRetryConnection={handleRetryConnection}
       onDisconnect={handleTryDifferentCode}
+      sound={{
+        isLocalEnabled: false, // Legacy page - minimal implementation
+        isHostEnabled: null,
+        hasPendingSync: false,
+        pendingSync: null,
+      }}
+      soundActions={{
+        onToggleLocal: () => {},
+        onSetHost: () => {},
+        onToggleBoth: () => {},
+        onAcceptSync: () => {},
+        onDeclineSync: () => {},
+        onDismissSync: () => {},
+      }}
     />
   );
 }

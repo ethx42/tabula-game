@@ -28,6 +28,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import type { GameStatus } from "@/lib/types/game";
+import { SoundToggle } from "@/components/sound-toggle";
 
 // ============================================================================
 // TYPES
@@ -72,6 +73,12 @@ interface ControlsBarProps {
 
   /** Callback to disconnect/end session */
   onDisconnect?: () => void;
+
+  /** v4.0: Sound enabled state (from useSoundSync) */
+  isSoundEnabled?: boolean;
+
+  /** v4.0: Callback when sound toggle clicked (from useSoundSync.hostToggle) */
+  onSoundToggle?: () => void;
 
   /** Whether reduced motion is preferred */
   reducedMotion?: boolean;
@@ -177,6 +184,8 @@ export function ControlsBar({
   onOpenHistory,
   onHoverBottom,
   onDisconnect,
+  isSoundEnabled,
+  onSoundToggle,
   reducedMotion = false,
   className = "",
 }: ControlsBarProps) {
@@ -288,6 +297,16 @@ export function ControlsBar({
                 label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 onClick={onToggleFullscreen}
               />
+
+              {/* Sound Toggle (v4.0) */}
+              {isSoundEnabled !== undefined && onSoundToggle && (
+                <SoundToggle
+                  size="md"
+                  className="h-12 w-12 md:h-14 md:w-14 bg-amber-900/80 hover:bg-amber-800/90"
+                  isEnabled={isSoundEnabled}
+                  onClick={onSoundToggle}
+                />
+              )}
 
               {/* Disconnect Button */}
               {onDisconnect && (
