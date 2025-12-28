@@ -172,11 +172,7 @@ function send(conn: Connection | undefined, message: object): void {
 /**
  * Broadcasts a message to all connections except the sender.
  */
-function broadcastExcept(
-  room: Room,
-  message: object,
-  exceptId?: string
-): void {
+function broadcastExcept(room: Room, message: object, exceptId?: string): void {
   const data = JSON.stringify(message);
   for (const conn of room.getConnections()) {
     if (conn.id !== exceptId) {
