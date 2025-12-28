@@ -212,7 +212,9 @@ function JoinPageContent() {
   );
 
   // Rollback timeout for optimistic host toggle (3 seconds)
-  const hostToggleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hostToggleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   const hostTogglePrevStateRef = useRef<boolean | null>(null);
 
   // Cleanup rollback timeout on unmount
@@ -510,7 +512,9 @@ function JoinPageContent() {
 
     // Set rollback timeout (3 seconds) - if no ACK, revert to previous state
     hostToggleTimeoutRef.current = setTimeout(() => {
-      log.warn(`Host toggle timeout - no ACK received, rolling back to: ${hostTogglePrevStateRef.current}`);
+      log.warn(
+        `Host toggle timeout - no ACK received, rolling back to: ${hostTogglePrevStateRef.current}`
+      );
       setHostSoundEnabled(hostTogglePrevStateRef.current);
       hostToggleTimeoutRef.current = null;
     }, 3000);

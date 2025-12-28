@@ -525,6 +525,7 @@ const VALID_MESSAGE_TYPES = new Set([
   "SPECTATOR_COUNT",
   // v4.0: Sound Preference Sync
   "SOUND_PREFERENCE",
+  "SOUND_PREFERENCE_ACK",
 ]);
 
 /**

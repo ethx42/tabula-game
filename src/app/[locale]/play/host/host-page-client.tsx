@@ -367,8 +367,12 @@ function HostPageContent() {
       sound.setEnabled(pendingSoundSync.enabled);
 
       // Send ACK back to Controller so it knows Host's new state
-      log.log(`Sending ACK to Controller: enabled=${pendingSoundSync.enabled}`);
-      socket.sendSoundPreferenceAck?.(pendingSoundSync.enabled, pendingSoundSync.scope);
+      log.log(`Sending ACK to Controller: enabled=${pendingSoundSync.enabled}, hasAckFn=${typeof socket.sendSoundPreferenceAck}`);
+      if (socket.sendSoundPreferenceAck) {
+        socket.sendSoundPreferenceAck(pendingSoundSync.enabled, pendingSoundSync.scope);
+      } else {
+        log.error("sendSoundPreferenceAck is not defined on socket!");
+      }
 
       clearPendingSoundSync();
     }

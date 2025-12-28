@@ -629,6 +629,7 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
 
   const sendSoundPreferenceAck = useCallback(
     (enabled: boolean, scope: "local" | "host_only" | "both") => {
+      log(`sendSoundPreferenceAck called (enabled: ${enabled}, scope: ${scope}, readyState: ${socketRef.current?.readyState})`);
       if (socketRef.current?.readyState !== WebSocket.OPEN) {
         log("Cannot send ACK, not connected");
         return;
