@@ -18,6 +18,18 @@ const nextConfig: NextConfig = {
         hostname: "picsum.photos",
         pathname: "/**",
       },
+      // Cloudflare R2 public URL
+      {
+        protocol: "https",
+        hostname: "pub-f6e0582122da452f9d51e1e631b8f543.r2.dev",
+        pathname: "/**",
+      },
+      // Allow any R2 dev subdomain (for flexibility)
+      {
+        protocol: "https",
+        hostname: "*.r2.dev",
+        pathname: "/**",
+      },
     ],
   },
 };
