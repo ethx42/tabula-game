@@ -349,6 +349,20 @@ function JoinPageContent() {
           };
         });
       }
+
+      // Handle host disconnection - show error and disconnect
+      if (message.type === "HOST_DISCONNECTED") {
+        log.warn("Host has disconnected");
+        setState((current) => ({
+          status: "error",
+          message: "The host has ended the session. Thanks for playing!",
+          roomId:
+            current.status === "connecting" || current.status === "connected"
+              ? current.roomId
+              : undefined,
+        }));
+        socket.disconnect();
+      }
     });
     return unsubscribe;
   }, [socket]);
@@ -582,6 +596,7 @@ function JoinPageContent() {
         onToggleLocal: sound.controllerToggleLocal,
         onToggleHost: handleToggleHost,
         onToggleBoth: sound.controllerToggleBoth,
+        onSetBoth: sound.controllerSetBoth,
         onAcceptSync: sound.acceptSync,
         onDeclineSync: sound.declineSync,
         onDismissSync: sound.dismissSyncForSession,
