@@ -7,10 +7,11 @@
  */
 
 export {
-  r2Client,
   R2_BUCKET_NAME,
   R2_PUBLIC_URL,
   isR2Configured,
+  isR2UploadConfigured,
+  getR2Client,
 } from "./r2-client";
 
 export {
@@ -18,9 +19,3 @@ export {
   resolveImageUrl,
   isR2Url,
 } from "./image-url";
-
-export {
-  uploadImage,
-  validateImageFile,
-} from "./upload-image";
-
