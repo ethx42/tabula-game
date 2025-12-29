@@ -19,7 +19,7 @@
  * @see SRD §2.4 Host UI State Machine
  */
 
-import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
+import { useState, useCallback, useEffect, useSyncExternalStore, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -33,6 +33,7 @@ import { HistoryStrip } from "./history-strip";
 import { ControlsBar } from "./controls-bar";
 import { HistoryModal } from "./history-modal";
 import { ReactionsOverlay } from "@/components/reactions-overlay";
+import { FullscreenPrompt } from "@/components/fullscreen-prompt";
 
 const log = createDevLogger("HostDisplay");
 
@@ -131,21 +132,77 @@ export function HostDisplay({
   const {
     state: uiState,
     toggleFullscreen,
+    enterFullscreen,
     handleHoverBottom,
+    onControllerConnected,
+    onControllerDisconnected,
   } = useHostUIState();
 
   const systemReducedMotion = useReducedMotion();
   const reducedMotion = forcedReducedMotion ?? systemReducedMotion;
 
-  // Modal state
-  const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
-
-  // Memoized values
+  // Memoized values (must be before refs that depend on them)
   const currentCard = session.currentIndex + 1;
   const totalCards = session.totalItems;
   const isControllerConnected = session.connection.controllerConnected;
   const history = session.history;
   const currentItem = session.currentItem;
+
+  // Modal state
+  const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
+  
+  // Fullscreen prompt state
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+  const [isActuallyFullscreen, setIsActuallyFullscreen] = useState(false);
+  // Initialize with false to detect first connection when component mounts with controller already connected
+  const prevControllerConnectedRef = useRef(false);
+  const hasShownInitialPromptRef = useRef(false);
+
+  // Track actual browser fullscreen state (not UI state)
+  useEffect(() => {
+    const checkFullscreen = () => {
+      setIsActuallyFullscreen(!!document.fullscreenElement);
+    };
+    
+    checkFullscreen();
+    document.addEventListener("fullscreenchange", checkFullscreen);
+    return () => document.removeEventListener("fullscreenchange", checkFullscreen);
+  }, []);
+
+  // Detect controller connection changes and show fullscreen prompt
+  useEffect(() => {
+    const wasConnected = prevControllerConnectedRef.current;
+    const isNowConnected = isControllerConnected;
+    
+    // Show prompt on connection change OR on first mount if already connected
+    const shouldShowPrompt = 
+      (!wasConnected && isNowConnected) || 
+      (isNowConnected && !hasShownInitialPromptRef.current);
+    
+    if (shouldShowPrompt) {
+      // Controller just connected (or was already connected on mount)
+      log.log("Controller connected, showing fullscreen prompt");
+      onControllerConnected();
+      setShowFullscreenPrompt(true);
+      hasShownInitialPromptRef.current = true;
+    } else if (wasConnected && !isNowConnected) {
+      // Controller disconnected
+      log.log("Controller disconnected");
+      onControllerDisconnected();
+      setShowFullscreenPrompt(false);
+    }
+    
+    prevControllerConnectedRef.current = isNowConnected;
+  }, [isControllerConnected, onControllerConnected, onControllerDisconnected]);
+
+  // Handle fullscreen prompt actions
+  const handleEnterFullscreen = useCallback(() => {
+    enterFullscreen();
+  }, [enterFullscreen]);
+
+  const handleDismissPrompt = useCallback(() => {
+    setShowFullscreenPrompt(false);
+  }, []);
 
   // Callbacks
   const handleOpenHistory = useCallback(() => {
@@ -409,6 +466,20 @@ export function HostDisplay({
 
       {/* v4.0: Reactions overlay */}
       <ReactionsOverlay reactions={reactions} />
+
+      {/* v4.0: Fullscreen prompt (appears when controller connects) */}
+      <FullscreenPrompt
+        isVisible={showFullscreenPrompt && !isActuallyFullscreen}
+        onEnterFullscreen={handleEnterFullscreen}
+        onDismiss={handleDismissPrompt}
+        autoDismissMs={6000}
+        showArrow={uiState.controlsVisible}
+        className={
+          uiState.controlsVisible
+            ? "bottom-48 left-1/2 -translate-x-1/2" // Above controls bar
+            : "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" // Center of screen
+        }
+      />
     </div>
   );
 }

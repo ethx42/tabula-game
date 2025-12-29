@@ -39,6 +39,9 @@ interface FullscreenPromptProps {
   /** Auto-dismiss duration in ms (default: 6000) */
   autoDismissMs?: number;
 
+  /** Whether to show the arrow pointer (default: true) */
+  showArrow?: boolean;
+
   /** Additional className */
   className?: string;
 }
@@ -88,6 +91,7 @@ export function FullscreenPrompt({
   onEnterFullscreen,
   onDismiss,
   autoDismissMs = DEFAULT_AUTO_DISMISS_MS,
+  showArrow = true,
   className = "",
 }: FullscreenPromptProps) {
   const t = useTranslations("host");
@@ -191,10 +195,12 @@ export function FullscreenPrompt({
             <div className="absolute -inset-px rounded-xl bg-gradient-to-br from-amber-400/10 via-transparent to-transparent pointer-events-none" />
           </div>
 
-          {/* Pointer arrow pointing down to button */}
-          <div className="absolute left-1/2 -translate-x-1/2 -bottom-2">
-            <div className="w-4 h-4 bg-amber-900/95 border-r border-b border-amber-600/30 transform rotate-45" />
-          </div>
+          {/* Pointer arrow pointing down to button (optional) */}
+          {showArrow && (
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-2">
+              <div className="w-4 h-4 bg-amber-900/95 border-r border-b border-amber-600/30 transform rotate-45" />
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
