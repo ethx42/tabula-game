@@ -51,6 +51,7 @@ interface ControllerGameState {
   totalItems: number;
   status: GameStatus;
   historyCount: number;
+  history: readonly ItemDefinition[];
 }
 
 // ============================================================================
@@ -272,6 +273,7 @@ function JoinPageContent() {
             totalItems: 0,
             status: "ready",
             historyCount: 0,
+            history: [],
           },
         };
       });
@@ -315,9 +317,19 @@ function JoinPageContent() {
 
     setState((prev) => {
       if (prev.status !== "connected") return prev;
+      
+      const update = socket.lastStateUpdate!;
       return {
         ...prev,
-        gameState: socket.lastStateUpdate!,
+        gameState: {
+          currentItem: update.currentItem,
+          currentIndex: update.currentIndex,
+          totalItems: update.totalItems,
+          status: update.status,
+          historyCount: update.historyCount,
+          // Ensure history is always an array (may be undefined in StateUpdatePayload)
+          history: update.history ?? prev.gameState.history ?? [],
+        },
       };
     });
   }, [socket.lastStateUpdate]);
