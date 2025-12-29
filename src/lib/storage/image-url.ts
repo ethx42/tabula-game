@@ -97,7 +97,7 @@ export function resolveImageUrl(imageUrl: string): string {
  * @returns True if URL is from R2
  */
 export function isR2Url(imageUrl: string): boolean {
-  return isR2Configured() && R2_PUBLIC_URL && imageUrl.startsWith(R2_PUBLIC_URL);
+  return isR2Configured() && !!R2_PUBLIC_URL && imageUrl.startsWith(R2_PUBLIC_URL);
 }
 
 /**

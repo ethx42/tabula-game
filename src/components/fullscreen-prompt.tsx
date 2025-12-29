@@ -68,7 +68,7 @@ const promptVariants = {
     scale: 1,
     transition: {
       duration: 0.25,
-      ease: [0.16, 1, 0.3, 1], // Custom ease for a polished feel
+      ease: [0.16, 1, 0.3, 1] as [number, number, number, number], // Custom ease for a polished feel
     },
   },
   exit: {
@@ -77,7 +77,7 @@ const promptVariants = {
     scale: 0.98,
     transition: {
       duration: 0.2,
-      ease: "easeIn",
+      ease: "easeIn" as const,
     },
   },
 };

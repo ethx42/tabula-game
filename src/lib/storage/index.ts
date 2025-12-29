@@ -11,7 +11,6 @@ export {
   R2_PUBLIC_URL,
   isR2Configured,
   isR2UploadConfigured,
-  getR2Client,
 } from "./r2-client";
 
 export {

@@ -76,39 +76,5 @@ export function getR2EndpointUrl(): string | null {
   return `https://${accountId}.r2.cloudflarestorage.com`;
 }
 
-/**
- * Lazy-loads the S3Client for R2 uploads.
- * Only call this on the server-side when you need to upload files.
- *
- * @returns Promise resolving to S3Client or null if not configured
- *
- * @example
- * ```ts
- * const client = await getR2Client();
- * if (client) {
- *   // Use client for uploads
- * }
- * ```
- */
-export async function getR2Client(): Promise<unknown | null> {
-  if (!isR2UploadConfigured()) {
-    return null;
-  }
-
-  try {
-    // Dynamic import to avoid bundling AWS SDK on client
-    const { S3Client } = await import("@aws-sdk/client-s3");
-
-    return new S3Client({
-      region: "auto",
-      endpoint: getR2EndpointUrl()!,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    });
-  } catch {
-    console.warn("⚠️ Failed to load @aws-sdk/client-s3. Install it for R2 upload support.");
-    return null;
-  }
-}
+// NOTE: getR2Client() for uploads will be added when @aws-sdk/client-s3 is installed.
+// Currently only public URL reading is supported.

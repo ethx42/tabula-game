@@ -25,7 +25,8 @@ import {
   loadDeckFromCatalog,
   type DeckCatalogEntry,
 } from "@/lib/game/deck-catalog";
-import { loadDeckFromFile, type DeckDefinition } from "@/lib/game/deck-loader";
+import { loadDeckFromFile } from "@/lib/game/deck-loader";
+import type { DeckDefinition } from "@/lib/types/game";
 import { resolveImageUrl } from "@/lib/storage/image-url";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -215,7 +216,7 @@ export function DeckSelector({
             decks={state.decks}
             defaultDeckId={defaultDeckId}
             onSelect={handleDeckSelect}
-            selecting={state.status === "selecting"}
+            selecting={false}
           />
         )}
         {state.status === "selecting" && (
