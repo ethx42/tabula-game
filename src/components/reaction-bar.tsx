@@ -131,6 +131,31 @@ export function ReactionBar({
     [isEnabled, clickCooldownMs, scheduleBatchFlush]
   );
 
+  // Keyboard shortcuts (1-6 for emojis)
+  useEffect(() => {
+    if (!isEnabled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      const keyNum = parseInt(e.key, 10);
+      if (keyNum >= 1 && keyNum <= REACTION_EMOJIS.length) {
+        e.preventDefault();
+        const emoji = REACTION_EMOJIS[keyNum - 1];
+        handleReact(emoji);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isEnabled, handleReact]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {

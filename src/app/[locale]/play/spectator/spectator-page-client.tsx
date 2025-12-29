@@ -360,7 +360,7 @@ export default function SpectatorPageClient() {
 
       {/* History Strip - REUSE from play/_components */}
       {historyItems.length > 0 && (
-        <div className="relative z-10 px-4 pb-24">
+        <div className="relative z-10 px-4 pb-32">
           <HistoryStrip
             history={historyItems}
             currentItem={gameState?.currentItem ?? null}
