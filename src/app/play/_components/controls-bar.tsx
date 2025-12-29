@@ -346,9 +346,9 @@ export function ControlsBar({
               </div>
             </div>
 
-            {/* ESC hint */}
+            {/* Keyboard hint */}
             <div className="mt-4 text-center text-xs text-amber-400/40">
-              Press <kbd className="rounded bg-amber-800/30 px-1.5 py-0.5">ESC</kbd> to
+              Press <kbd className="rounded bg-amber-800/30 px-1.5 py-0.5">C</kbd> to
               toggle controls
             </div>
           </motion.div>

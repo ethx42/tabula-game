@@ -273,10 +273,21 @@ export function useHostUIState() {
     };
   }, [state.controlsTemporary, store]);
 
-  // ESC key handler for control toggle (FR-023)
+  // 'C' key handler for control toggle (FR-023)
+  // Note: ESC is reserved by browsers to exit fullscreen mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      // Ignore if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (e.key === "c" || e.key === "C") {
         store.dispatch({ type: "TOGGLE_CONTROLS" });
       }
     };
