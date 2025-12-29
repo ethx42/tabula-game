@@ -107,6 +107,11 @@
     "clickToExpand": "Tap to expand",
     "empty": "No cards drawn yet"
   },
+  "host": {
+    "controllerConnected": "Controller connected!",
+    "clickForFullscreen": "Click here for fullscreen mode",
+    "dismissPrompt": "Dismiss"
+  },
   "spectator": {
     "watching": "Watching the game",
     "spectatorCount": "{count, plural, =0 {No spectators} =1 {1 spectator} other {# spectators}}",

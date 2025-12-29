@@ -107,6 +107,11 @@
     "clickToExpand": "Toca para expandir",
     "empty": "Aún no se han sacado cartas"
   },
+  "host": {
+    "controllerConnected": "¡Control conectado!",
+    "clickForFullscreen": "Haz clic para pantalla completa",
+    "dismissPrompt": "Cerrar"
+  },
   "spectator": {
     "watching": "Viendo el juego",
     "spectatorCount": "{count, plural, =0 {Sin espectadores} =1 {1 espectador} other {# espectadores}}",
