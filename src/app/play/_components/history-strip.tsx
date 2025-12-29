@@ -22,6 +22,7 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 import Image from "next/image";
 import type { ItemDefinition } from "@/lib/types/game";
 import { cn } from "@/lib/utils";
+import { resolveImageUrl } from "@/lib/storage/image-url";
 
 // ============================================================================
 // TYPES
@@ -109,26 +110,63 @@ function getVisualHierarchy(index: number, total: number) {
 // ANIMATION VARIANTS (SRD §5.4)
 // ============================================================================
 
+/**
+ * Animation variants for card entry.
+ * Uses spring physics for natural motion.
+ */
 const cardEnterVariants = {
   initial: {
-    scale: 0,
+    scale: 0.5,
     opacity: 0,
+    x: -20, // Slide in from left (horizontal) or top (vertical)
   },
   animate: {
     scale: 1,
     opacity: 1,
+    x: 0,
     transition: {
-      type: "spring",
-      stiffness: 300,
+      type: "spring" as const,
+      stiffness: 400,
       damping: 25,
+      mass: 0.8,
     },
   },
   exit: {
     scale: 0.8,
     opacity: 0,
     transition: {
-      duration: 0.2,
-      ease: "easeIn",
+      duration: 0.15,
+      ease: "easeIn" as const,
+    },
+  },
+};
+
+/**
+ * Animation variants for vertical layout (slide from top).
+ */
+const cardEnterVariantsVertical = {
+  initial: {
+    scale: 0.5,
+    opacity: 0,
+    y: -20,
+  },
+  animate: {
+    scale: 1,
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 400,
+      damping: 25,
+      mass: 0.8,
+    },
+  },
+  exit: {
+    scale: 0.8,
+    opacity: 0,
+    transition: {
+      duration: 0.15,
+      ease: "easeIn" as const,
     },
   },
 };
@@ -137,6 +175,17 @@ const reducedMotionCardVariants = {
   initial: { opacity: 0 },
   animate: { opacity: 1 },
   exit: { opacity: 0 },
+};
+
+/**
+ * Layout transition for smooth card repositioning.
+ * This is what makes cards slide over when a new one enters.
+ */
+const layoutTransition = {
+  type: "spring" as const,
+  stiffness: 350,
+  damping: 30,
+  mass: 0.8,
 };
 
 // ============================================================================
@@ -153,7 +202,13 @@ function HistoryCard({
   isVertical,
 }: HistoryCardProps) {
   const hierarchy = getVisualHierarchy(index, total);
-  const variants = reducedMotion ? reducedMotionCardVariants : cardEnterVariants;
+  
+  // Select appropriate variants based on layout direction and motion preference
+  const variants = reducedMotion 
+    ? reducedMotionCardVariants 
+    : isVertical 
+      ? cardEnterVariantsVertical 
+      : cardEnterVariants;
 
   return (
     <motion.button
@@ -163,31 +218,35 @@ function HistoryCard({
       initial="initial"
       animate="animate"
       exit="exit"
+      transition={layoutTransition}
       onClick={onClick}
       className={`
         group relative shrink-0 overflow-hidden rounded-lg
-        transition-transform duration-200 hover:z-10 hover:scale-105
+        hover:z-10
         focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-amber-950
         ${isVertical ? "w-20 md:w-24" : "h-20 w-14 md:h-24 md:w-16"}
       `}
       style={{
         opacity: hierarchy.opacity,
-        transform: `scale(${hierarchy.scale})`,
         boxShadow: isNewest
-          ? "0 0 0 2px var(--accent-color, #f59e0b)"
+          ? "0 0 0 3px var(--accent-color, #f59e0b)"
           : hierarchy.borderWidth > 0
             ? "0 0 0 1px rgba(255,255,255,0.2)"
             : "none",
-        aspectRatio: isVertical ? "2/3" : undefined,
+        aspectRatio: isVertical ? "4/5" : undefined,
       }}
+      whileHover={{ scale: 1.08, zIndex: 10 }}
+      whileTap={{ scale: 0.95 }}
       aria-label={`${item.name}, card ${total - index} of ${total}`}
     >
+      {/* Skeleton loader */}
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-amber-800/50 to-amber-900/50" />
       {/* Card Image */}
       <Image
-        src={item.imageUrl}
+        src={resolveImageUrl(item.imageUrl)}
         alt={item.name}
         fill
-        className="object-cover"
+        className="object-cover transition-opacity duration-300"
         sizes={isVertical ? "96px" : "64px"}
       />
 
