@@ -26,7 +26,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { HostDisplay } from "@/app/play/_components/host-display";
 import { QRPairing } from "@/app/play/_components/qr-pairing";
-import { loadDemoDeck } from "@/lib/game/deck-loader";
+import { DeckSelector } from "@/app/play/_components/deck-selector";
 import { useGameSocket } from "@/lib/realtime/partykit-client";
 import { useSoundSync, SoundSource } from "@/lib/audio";
 import { isGameCommand, type ReactionBurstMessage } from "@/lib/realtime/types";
@@ -47,6 +47,7 @@ const log = createDevLogger("HostPage");
 // ============================================================================
 
 type HostPageState =
+  | { status: "selecting-deck" }
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "pairing"; session: GameSession }
@@ -472,14 +473,21 @@ function HostPageContent() {
   // SESSION INITIALIZATION
   // ===========================================================================
 
+  // Initialize with deck selection state
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
+    setState({ status: "selecting-deck" });
+  }, []);
 
-    async function initSession() {
+  // Handle deck selection
+  const handleDeckSelect = useCallback(
+    (deck: DeckDefinition) => {
       try {
-        log.info(`Initializing session for room: ${roomId}`);
-        const deck = await loadDemoDeck();
+        log.info(`Initializing session with deck: ${deck.id}`, {
+          roomId,
+          deckItems: deck.items.length,
+        });
         const session = createInitialSession(deck, roomId);
         log.log("Session created", { deckItems: deck.items.length });
         setState({ status: "pairing", session });
@@ -487,17 +495,17 @@ function HostPageContent() {
         connectRef.current();
       } catch (error) {
         log.error("Failed to initialize session", error);
-        hasInitialized.current = false;
         setState({
           status: "error",
           message:
-            error instanceof Error ? error.message : "Failed to load deck",
+            error instanceof Error
+              ? error.message
+              : "Failed to initialize session",
         });
       }
-    }
-
-    initSession();
-  }, [roomId]);
+    },
+    [roomId]
+  );
 
   // ===========================================================================
   // CONTROLLER CONNECTION
@@ -589,6 +597,26 @@ function HostPageContent() {
   // ===========================================================================
   // RENDER
   // ===========================================================================
+
+  if (state.status === "selecting-deck") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-amber-950 via-amber-900 to-amber-950 p-6">
+        <div className="w-full max-w-6xl">
+          <div className="mb-8 text-center">
+            <h1 className="mb-2 font-serif text-4xl font-bold text-amber-100">
+              Tabula
+            </h1>
+            <p className="text-amber-300/70">Select a deck to begin</p>
+          </div>
+          <DeckSelector
+            onDeckSelect={handleDeckSelect}
+            showUploadOption={true}
+            defaultDeckId="demo-barranquilla"
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (state.status === "loading") {
     return <HostPageLoading />;
