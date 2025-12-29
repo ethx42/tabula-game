@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Reuse existing components (single source of truth)
 import { CurrentCard } from "@/app/play/_components/current-card";
+import { TextPanel } from "@/app/play/_components/text-panel";
 import { HistoryStrip } from "@/app/play/_components/history-strip";
 
 // New spectator-specific components
@@ -330,15 +331,28 @@ export default function SpectatorPageClient() {
               key="content"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-lg"
+              className="w-full max-w-5xl"
             >
-              {/* REUSE: CurrentCard component from play/_components */}
-              <CurrentCard
-                item={gameState?.currentItem ?? null}
-                currentNumber={currentCard}
-                totalCards={totalCards}
-                showCounter={true}
-              />
+              {/* Card + Text Layout - mirrors host layout */}
+              <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center lg:gap-12">
+                {/* REUSE: CurrentCard component from play/_components */}
+                <CurrentCard
+                  item={gameState?.currentItem ?? null}
+                  currentNumber={currentCard}
+                  totalCards={totalCards}
+                  showCounter={true}
+                />
+
+                {/* REUSE: TextPanel component from play/_components */}
+                <TextPanel
+                  item={gameState?.currentItem ?? null}
+                  currentNumber={currentCard}
+                  totalCards={totalCards}
+                  showCounter={false}
+                  showCategory={true}
+                  className="w-full max-w-md lg:mt-8"
+                />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
