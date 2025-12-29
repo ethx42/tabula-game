@@ -7,9 +7,7 @@ import { create } from "zustand";
 import type {
   WizardStep,
   WizardState,
-  GeneratorConfig,
   GenerationResult,
-  ConstraintValidation,
   Item,
   BoardConfig,
   DistributionStrategy,
@@ -103,11 +101,16 @@ export const useGeneratorStore = create<GeneratorStore>((set, get) => ({
 
     switch (currentStep) {
       case "items":
-        return config.items.length >= config.boardConfig.rows * config.boardConfig.cols;
+        return (
+          config.items.length >=
+          config.boardConfig.rows * config.boardConfig.cols
+        );
       case "board":
         return config.numBoards >= 1;
       case "distribution": {
-        const errors = validations.filter((v) => !v.isValid && v.severity === "error");
+        const errors = validations.filter(
+          (v) => !v.isValid && v.severity === "error"
+        );
         return errors.length === 0;
       }
       case "preview":
@@ -254,4 +257,3 @@ export const useResult = () => useGeneratorStore((s) => s.result);
 export const useValidations = () => useGeneratorStore((s) => s.validations);
 export const useIsGenerating = () => useGeneratorStore((s) => s.isGenerating);
 export const useError = () => useGeneratorStore((s) => s.error);
-
