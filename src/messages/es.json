@@ -111,7 +111,8 @@
     "watching": "Viendo el juego",
     "spectatorCount": "{count, plural, =0 {Sin espectadores} =1 {1 espectador} other {# espectadores}}",
     "react": "¡Reacciona!",
-    "cooldown": "Espera un momento..."
+    "cooldown": "Espera un momento...",
+    "reactWith": "Reaccionar con {emoji}"
   },
   "boards": {
     "status": "Estado de Tableros",
