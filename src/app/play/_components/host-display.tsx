@@ -390,7 +390,9 @@ export function HostDisplay({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="fixed top-4 right-4 z-30 flex items-center gap-2 rounded-full bg-amber-900/80 px-4 py-2 backdrop-blur-sm"
+            className={`fixed top-4 z-30 flex items-center gap-2 rounded-full bg-amber-900/80 px-4 py-2 backdrop-blur-sm ${
+              isWideScreen ? "right-36" : "right-4"
+            }`}
           >
             <Users className="h-4 w-4 text-amber-400" />
             <span className="text-sm font-medium text-amber-200">
