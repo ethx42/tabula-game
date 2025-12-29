@@ -143,6 +143,9 @@ export interface UseSoundSyncReturn {
   /** (Controller) Toggle sound on both devices */
   controllerToggleBoth: () => boolean;
 
+  /** (Controller) Set sound on both devices to a specific state */
+  controllerSetBoth: (enabled: boolean) => void;
+
   // ========== Sync Modal Actions ==========
   /** Accept pending sync (apply other device's preference) */
   acceptSync: () => void;
@@ -316,6 +319,25 @@ export function useSoundSync(config: UseSoundSyncConfig): UseSoundSyncReturn {
     return newState;
   }, [role, socket]);
 
+  /**
+   * Controller sets sound on both devices to a specific state.
+   * Use this instead of toggle when you know the target state.
+   */
+  const controllerSetBoth = useCallback(
+    (enabled: boolean) => {
+      audioManager.setEnabled(enabled);
+
+      if (role === SoundSource.CONTROLLER && socket) {
+        socket.sendSoundPreference(
+          enabled,
+          SoundSource.CONTROLLER,
+          SoundScope.BOTH
+        );
+      }
+    },
+    [role, socket]
+  );
+
   // ==========================================================================
   // SYNC MODAL ACTIONS
   // ==========================================================================
@@ -380,6 +402,7 @@ export function useSoundSync(config: UseSoundSyncConfig): UseSoundSyncReturn {
       controllerToggleLocal,
       controllerSetHostOnly,
       controllerToggleBoth,
+      controllerSetBoth,
 
       // Sync modal actions
       acceptSync,
@@ -402,6 +425,7 @@ export function useSoundSync(config: UseSoundSyncConfig): UseSoundSyncReturn {
       controllerToggleLocal,
       controllerSetHostOnly,
       controllerToggleBoth,
+      controllerSetBoth,
       acceptSync,
       declineSync,
       dismissSyncForSession,

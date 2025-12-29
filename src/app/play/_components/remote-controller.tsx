@@ -75,8 +75,11 @@ export interface ControllerSoundActions {
   /** Toggle sound on Host (sends command to Host) */
   onToggleHost: () => void;
 
-  /** Toggle sound on both devices */
-  onToggleBoth: () => void;
+  /** Toggle sound on both devices (legacy) */
+  onToggleBoth?: () => void;
+
+  /** Set sound on both devices to a specific state (preferred) */
+  onSetBoth?: (enabled: boolean) => void;
 
   /** Accept pending sync from Host */
   onAcceptSync: () => void;
@@ -312,6 +315,7 @@ export function RemoteController({
             onToggleLocal={soundActions.onToggleLocal}
             onToggleHost={soundActions.onToggleHost}
             onToggleBoth={soundActions.onToggleBoth}
+            onSetBoth={soundActions.onSetBoth}
           />
 
           {/* Disconnect */}

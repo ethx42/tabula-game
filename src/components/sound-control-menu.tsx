@@ -42,8 +42,11 @@ export interface SoundControlMenuProps {
   /** Toggle sound on Host (sends command to Host) */
   onToggleHost: () => void;
 
-  /** Toggle sound on both devices */
-  onToggleBoth: () => void;
+  /** Toggle sound on both devices (legacy, still supported) */
+  onToggleBoth?: () => void;
+
+  /** Set sound on both devices to a specific state (preferred) */
+  onSetBoth?: (enabled: boolean) => void;
 
   /** Optional class name */
   className?: string;
@@ -159,6 +162,7 @@ export function SoundControlMenu({
   onToggleLocal,
   onToggleHost,
   onToggleBoth,
+  onSetBoth,
   className = "",
 }: SoundControlMenuProps) {
   const t = useTranslations("soundControl");
@@ -219,9 +223,22 @@ export function SoundControlMenu({
   }, [onToggleHost]);
 
   const handleBothToggle = useCallback(() => {
-    onToggleBoth();
+    // Determine the target state based on current states
+    // If any sound is ON, we want to mute all (set to false)
+    // If all sounds are OFF, we want to unmute all (set to true)
+    const anySoundOn = isLocalEnabled || isHostEnabled === true;
+    const targetState = !anySoundOn; // If any is on, turn all off; otherwise turn all on
+
+    if (onSetBoth) {
+      // Preferred: set to explicit state
+      onSetBoth(targetState);
+    } else if (onToggleBoth) {
+      // Legacy fallback
+      onToggleBoth();
+    }
+
     setIsOpen(false);
-  }, [onToggleBoth]);
+  }, [isLocalEnabled, isHostEnabled, onSetBoth, onToggleBoth]);
 
   // ==========================================================================
   // RENDER

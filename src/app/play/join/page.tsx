@@ -514,6 +514,7 @@ function JoinPageContent() {
         onToggleLocal: () => {},
         onToggleHost: () => {},
         onToggleBoth: () => {},
+        onSetBoth: () => {},
         onAcceptSync: () => {},
         onDeclineSync: () => {},
         onDismissSync: () => {},
