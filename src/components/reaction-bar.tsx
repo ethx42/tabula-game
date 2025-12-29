@@ -103,11 +103,18 @@ export function ReactionBar({
     (emoji: ReactionEmoji) => {
       if (!isEnabled) return;
 
+      // Always show visual feedback immediately (no cooldown for visuals)
+      setPressedEmoji(emoji);
+      if (pressedTimeoutRef.current) {
+        clearTimeout(pressedTimeoutRef.current);
+      }
+      pressedTimeoutRef.current = setTimeout(() => setPressedEmoji(null), 150);
+
+      // Check cooldown only for queueing reactions
       const now = Date.now();
       const lastClick = lastClickRef.current.get(emoji) ?? 0;
-
-      // Check visual cooldown (fast, just for preventing spam clicks)
       if (now - lastClick < clickCooldownMs) {
+        // Visual feedback shown, but don't queue duplicate
         return;
       }
 
@@ -120,13 +127,6 @@ export function ReactionBar({
 
       // Schedule batch flush
       scheduleBatchFlush();
-
-      // Trigger button press animation
-      setPressedEmoji(emoji);
-      if (pressedTimeoutRef.current) {
-        clearTimeout(pressedTimeoutRef.current);
-      }
-      pressedTimeoutRef.current = setTimeout(() => setPressedEmoji(null), 200);
     },
     [isEnabled, clickCooldownMs, scheduleBatchFlush]
   );
@@ -191,11 +191,11 @@ export function ReactionBar({
               animate={{ 
                 opacity: 1, 
                 y: 0,
-                scale: pressedEmoji === emoji ? 1.15 : 1,
+                scale: pressedEmoji === emoji ? 1.1 : 1,
               }}
               transition={{ 
                 delay: index * 0.05,
-                scale: { duration: 0.1 },
+                scale: { type: "spring", stiffness: 500, damping: 25 },
               }}
               className={cn(
                 "relative text-2xl sm:text-3xl p-2 sm:p-3 rounded-full",
@@ -213,15 +213,15 @@ export function ReactionBar({
             >
               {emoji}
 
-              {/* Ripple ring on press */}
-              <AnimatePresence>
+              {/* Ripple ring on press - uses key to force new animation on each press */}
+              <AnimatePresence mode="wait">
                 {pressedEmoji === emoji && (
                   <motion.div
-                    initial={{ scale: 0.8, opacity: 0.6 }}
-                    animate={{ scale: 1.8, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="absolute inset-0 rounded-full border-2 border-amber-400"
+                    key={`ring-${Date.now()}`}
+                    initial={{ scale: 0.5, opacity: 0.8 }}
+                    animate={{ scale: 1.5, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-full border-2 border-amber-400 pointer-events-none"
                   />
                 )}
               </AnimatePresence>
