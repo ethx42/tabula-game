@@ -282,11 +282,14 @@ export function isReactionEmoji(value: unknown): value is ReactionEmoji {
 
 /**
  * Spectator sends an emoji reaction.
+ * Supports optional count for batched reactions.
  * @direction Spectator→Server
  */
 export interface SendReactionMessage {
   readonly type: "SEND_REACTION";
   readonly emoji: ReactionEmoji;
+  /** Number of reactions (defaults to 1 if not provided) */
+  readonly count?: number;
 }
 
 /**
@@ -681,9 +684,13 @@ export function closeHistoryMessage(): CloseHistoryMessage {
 
 /**
  * Creates a SEND_REACTION message.
+ * @param emoji - The emoji to send
+ * @param count - Optional count for batched reactions (defaults to 1)
  */
-export function sendReactionMessage(emoji: ReactionEmoji): SendReactionMessage {
-  return { type: "SEND_REACTION", emoji };
+export function sendReactionMessage(emoji: ReactionEmoji, count?: number): SendReactionMessage {
+  return count && count > 1 
+    ? { type: "SEND_REACTION", emoji, count }
+    : { type: "SEND_REACTION", emoji };
 }
 
 /**
