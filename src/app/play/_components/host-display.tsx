@@ -34,6 +34,7 @@ import { ControlsBar } from "./controls-bar";
 import { HistoryModal } from "./history-modal";
 import { ReactionsOverlay } from "@/components/reactions-overlay";
 import { FullscreenPrompt } from "@/components/fullscreen-prompt";
+import { useImagePreloader } from "@/lib/game/image-preloader";
 
 const log = createDevLogger("HostDisplay");
 
@@ -147,6 +148,15 @@ export function HostDisplay({
   const isControllerConnected = session.connection.controllerConnected;
   const history = session.history;
   const currentItem = session.currentItem;
+
+  // Prefetch upcoming images for faster loading (prefetch next 5 cards)
+  // Uses shuffledDeck order to preload the ACTUAL next cards
+  useImagePreloader(
+    session.deck.items,
+    session.shuffledDeck,
+    session.currentIndex,
+    5 // preload 5 ahead
+  );
 
   // Modal state
   const [isHistoryModalOpen, setHistoryModalOpen] = useState(false);
