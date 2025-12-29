@@ -49,7 +49,8 @@ const log = {
 type ClientRole = "host" | "controller" | "spectator";
 
 /**
- * Minimal game state stored on server for reconnection sync
+ * Game state stored on server for reconnection sync.
+ * v4.0: Extended to include currentItem and history for late-joining spectators.
  */
 interface GameStateSnapshot {
   currentIndex: number;
@@ -58,6 +59,10 @@ interface GameStateSnapshot {
   historyCount: number;
   /** v4.0: Whether history modal is open */
   isHistoryOpen?: boolean;
+  /** v4.0: Current item for late-joining spectators */
+  currentItem?: unknown;
+  /** v4.0: History array for late-joining spectators */
+  history?: unknown[];
 }
 
 /**
@@ -133,6 +138,7 @@ interface ResetGameMessage extends BaseMessage {
 }
 
 // State Updates (from Host)
+// v4.0: Added history array for late-joining spectators
 interface StateUpdateMessage extends BaseMessage {
   type: "STATE_UPDATE";
   payload: {
@@ -141,6 +147,7 @@ interface StateUpdateMessage extends BaseMessage {
     totalItems: number;
     status: string;
     historyCount: number;
+    history?: unknown[];
   };
 }
 
@@ -690,13 +697,15 @@ export default class GameRoom implements Server {
       return;
     }
 
-    // Cache state for reconnection sync
+    // Cache state for reconnection sync (including currentItem and history for late-joining spectators)
     this.state.gameState = {
       currentIndex: msg.payload.currentIndex,
       totalItems: msg.payload.totalItems,
       status: msg.payload.status as GameStateSnapshot["status"],
       historyCount: msg.payload.historyCount,
       isHistoryOpen: this.state.isHistoryOpen,
+      currentItem: msg.payload.currentItem,
+      history: msg.payload.history,
     };
 
     // Forward to controller
