@@ -184,6 +184,12 @@ export interface StateUpdatePayload {
    * Sent when modal is open or on reconnection for sync.
    */
   readonly history?: readonly ItemDefinition[];
+
+  /**
+   * Whether the current card is flipped (showing longText).
+   * Spectators sync to this but can override locally.
+   */
+  readonly isFlipped?: boolean;
 }
 
 /**
@@ -549,7 +555,11 @@ export function isWSMessage(value: unknown): value is WSMessage {
  */
 export function isGameCommand(
   msg: WSMessage
-): msg is DrawCardMessage | PauseGameMessage | ResumeGameMessage | ResetGameMessage {
+): msg is
+  | DrawCardMessage
+  | PauseGameMessage
+  | ResumeGameMessage
+  | ResetGameMessage {
   return (
     msg.type === "DRAW_CARD" ||
     msg.type === "PAUSE_GAME" ||
@@ -572,7 +582,10 @@ export function isStateUpdate(
  */
 export function isConnectionEvent(
   msg: WSMessage
-): msg is ControllerConnectedMessage | ControllerDisconnectedMessage | HostDisconnectedMessage {
+): msg is
+  | ControllerConnectedMessage
+  | ControllerDisconnectedMessage
+  | HostDisconnectedMessage {
   return (
     msg.type === "CONTROLLER_CONNECTED" ||
     msg.type === "CONTROLLER_DISCONNECTED" ||
@@ -687,8 +700,11 @@ export function closeHistoryMessage(): CloseHistoryMessage {
  * @param emoji - The emoji to send
  * @param count - Optional count for batched reactions (defaults to 1)
  */
-export function sendReactionMessage(emoji: ReactionEmoji, count?: number): SendReactionMessage {
-  return count && count > 1 
+export function sendReactionMessage(
+  emoji: ReactionEmoji,
+  count?: number
+): SendReactionMessage {
+  return count && count > 1
     ? { type: "SEND_REACTION", emoji, count }
     : { type: "SEND_REACTION", emoji };
 }
@@ -752,4 +768,3 @@ export function parseMessage(data: string): WSMessage | null {
     return null;
   }
 }
-

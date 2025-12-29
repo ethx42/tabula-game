@@ -6,11 +6,16 @@
  * Displays the current card in the game with a 2:3 aspect ratio.
  * Supports 3D flip animation to reveal longText content.
  *
+ * Supports "Sync + Override" pattern for spectators:
+ * - External flip state syncs from host
+ * - Local interactions override temporarily
+ * - Resets to synced state on card change
+ *
  * @see SRD §5.1 Host Display Layout
  * @see FR-030 through FR-034
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import type { ItemDefinition } from "@/lib/types/game";
@@ -37,6 +42,36 @@ interface CurrentCardProps {
 
   /** Custom className for the container */
   className?: string;
+
+  /**
+   * External flip state from host (for spectator sync).
+   * When provided, component syncs to this but allows local override.
+   */
+  hostFlipState?: boolean;
+
+  /**
+   * Callback when flip state changes (for host to broadcast).
+   * Only called in "controlled" mode when user interacts.
+   */
+  onFlipChange?: (isFlipped: boolean) => void;
+
+  /**
+   * Whether to show the title overlay on the card front.
+   * Defaults to true for backward compatibility.
+   */
+  showTitle?: boolean;
+
+  /**
+   * Whether the spectator's local flip differs from host.
+   * Used to show subtle out-of-sync indicator.
+   */
+  isOutOfSync?: boolean;
+
+  /**
+   * Text for the out-of-sync indicator (i18n).
+   * Defaults to "Personal view" if not provided.
+   */
+  outOfSyncText?: string;
 }
 
 // ============================================================================
@@ -107,20 +142,47 @@ export function CurrentCard({
   showCounter = true,
   reducedMotion = false,
   className = "",
+  hostFlipState,
+  onFlipChange,
+  showTitle = true,
+  isOutOfSync = false,
+  outOfSyncText = "Personal view",
 }: CurrentCardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+  // Internal flip state (used when no external control)
+  const [internalFlipState, setInternalFlipState] = useState(false);
+
+  // Determine if we're in "spectator mode" (external state provided)
+  const isSpectatorMode = hostFlipState !== undefined;
+
+  // Effective flip state:
+  // - In spectator mode: use internal state (which can override host)
+  // - In host mode: use internal state directly
+  const effectiveFlipState = internalFlipState;
+
+  // Sync internal state with host state when it changes (spectator mode)
+  useEffect(() => {
+    if (isSpectatorMode && hostFlipState !== undefined) {
+      setInternalFlipState(hostFlipState);
+    }
+  }, [hostFlipState, isSpectatorMode]);
 
   // Reset flip state when item changes
   const handleItemChange = useCallback(() => {
-    setIsFlipped(false);
+    setInternalFlipState(false);
   }, []);
 
   // Toggle flip on click (FR-034)
   const handleClick = useCallback(() => {
     if (item?.longText) {
-      setIsFlipped((prev) => !prev);
+      const newState = !effectiveFlipState;
+      setInternalFlipState(newState);
+
+      // Notify parent (only in host mode, for broadcasting)
+      if (onFlipChange) {
+        onFlipChange(newState);
+      }
     }
-  }, [item?.longText]);
+  }, [item?.longText, effectiveFlipState, onFlipChange]);
 
   // Handle keyboard interaction
   const handleKeyDown = useCallback(
@@ -163,7 +225,7 @@ export function CurrentCard({
                   ? `${item.name}. Click to reveal more information`
                   : item.name
               }
-              animate={isFlipped ? "back" : "front"}
+              animate={effectiveFlipState ? "back" : "front"}
               variants={flipVariants}
               style={{ transformStyle: "preserve-3d" }}
             >
@@ -186,20 +248,24 @@ export function CurrentCard({
                     priority
                   />
 
-                  {/* Gradient overlay for text legibility */}
-                  <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
+                  {/* Gradient overlay for text legibility (only when title is shown) */}
+                  {showTitle && (
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
+                  )}
 
-                  {/* Card Name (FR-031) */}
-                  <div className="absolute inset-x-0 bottom-0 p-4 md:p-6">
-                    <h2
-                      className="text-center font-serif text-2xl font-bold text-white drop-shadow-lg md:text-3xl lg:text-4xl"
-                      style={{
-                        textShadow: "0 2px 10px rgba(0,0,0,0.5)",
-                      }}
-                    >
-                      {item.name}
-                    </h2>
-                  </div>
+                  {/* Card Name (FR-031) - conditionally rendered */}
+                  {showTitle && (
+                    <div className="absolute inset-x-0 bottom-0 p-4 md:p-6">
+                      <h2
+                        className="text-center font-serif text-2xl font-bold text-white drop-shadow-lg md:text-3xl lg:text-4xl"
+                        style={{
+                          textShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {item.name}
+                      </h2>
+                    </div>
+                  )}
 
                   {/* Theme Color Accent */}
                   {item.themeColor && (
@@ -226,6 +292,16 @@ export function CurrentCard({
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         />
                       </svg>
+                    </div>
+                  )}
+
+                  {/* Out-of-sync indicator (spectator mode only) - subtle, non-intrusive */}
+                  {isOutOfSync && (
+                    <div className="absolute left-3 bottom-3 flex items-center gap-1.5 rounded-full bg-black/30 px-2.5 py-1 backdrop-blur-sm transition-opacity duration-300">
+                      <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400/80" />
+                      <span className="text-[10px] font-medium text-white/70">
+                        {outOfSyncText}
+                      </span>
                     </div>
                   )}
                 </div>
