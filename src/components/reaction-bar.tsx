@@ -1,0 +1,220 @@
+"use client";
+
+/**
+ * ReactionBar Component
+ *
+ * Displays emoji reaction buttons for spectators.
+ * Implements client-side batching to minimize server calls while
+ * providing immediate visual feedback.
+ *
+ * Strategy:
+ * - User can click rapidly (low visual cooldown: 150ms)
+ * - Clicks are batched and sent to server every 400ms
+ * - This reduces server load while maintaining responsiveness
+ *
+ * @module components/reaction-bar
+ * @see SRD §6.3 Spectator Mode
+ */
+
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
+import { REACTION_EMOJIS, type ReactionEmoji } from "@/lib/realtime/types";
+import { cn } from "@/lib/utils";
+import { createDevLogger } from "@/lib/utils/dev-logger";
+
+const log = createDevLogger("ReactionBar");
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface ReactionBarProps {
+  /** Callback when reaction is sent to server (with optional count) */
+  onReact: (emoji: ReactionEmoji, count?: number) => void;
+  /** Batch interval: how often to send accumulated reactions (ms) */
+  batchIntervalMs?: number;
+  /** Minimum delay between clicks for visual feedback (ms) */
+  clickCooldownMs?: number;
+  /** Whether reactions are enabled (e.g., game is active) */
+  isEnabled?: boolean;
+  /** Custom className for the container */
+  className?: string;
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+/** How often to flush batched reactions to server */
+const DEFAULT_BATCH_INTERVAL_MS = 400;
+/** Minimum time between visual feedback on same button */
+const DEFAULT_CLICK_COOLDOWN_MS = 150;
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
+export function ReactionBar({
+  onReact,
+  batchIntervalMs = DEFAULT_BATCH_INTERVAL_MS,
+  clickCooldownMs = DEFAULT_CLICK_COOLDOWN_MS,
+  isEnabled = true,
+  className,
+}: ReactionBarProps) {
+  const t = useTranslations("spectator");
+  
+  // Track pending reactions to batch
+  const pendingReactionsRef = useRef<Map<ReactionEmoji, number>>(new Map());
+  const batchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Track last click time per emoji for visual cooldown
+  const lastClickRef = useRef<Map<ReactionEmoji, number>>(new Map());
+  
+  // Track which emoji was just pressed for ring animation
+  const [pressedEmoji, setPressedEmoji] = useState<ReactionEmoji | null>(null);
+  const pressedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Flush pending reactions to server
+  const flushReactions = useCallback(() => {
+    const pending = pendingReactionsRef.current;
+    if (pending.size === 0) return;
+
+    // Send one message per emoji type with the accumulated count
+    for (const [emoji, count] of pending.entries()) {
+      log.info(`Flushing ${count}x ${emoji} to server`);
+      onReact(emoji, count);
+    }
+
+    pending.clear();
+    batchTimerRef.current = null;
+  }, [onReact]);
+
+  // Schedule a batch flush
+  const scheduleBatchFlush = useCallback(() => {
+    if (batchTimerRef.current) return; // Already scheduled
+    
+    batchTimerRef.current = setTimeout(() => {
+      flushReactions();
+    }, batchIntervalMs);
+  }, [batchIntervalMs, flushReactions]);
+
+  const handleReact = useCallback(
+    (emoji: ReactionEmoji) => {
+      if (!isEnabled) return;
+
+      const now = Date.now();
+      const lastClick = lastClickRef.current.get(emoji) ?? 0;
+
+      // Check visual cooldown (fast, just for preventing spam clicks)
+      if (now - lastClick < clickCooldownMs) {
+        return;
+      }
+
+      lastClickRef.current.set(emoji, now);
+
+      // Add to pending batch
+      const currentCount = pendingReactionsRef.current.get(emoji) ?? 0;
+      pendingReactionsRef.current.set(emoji, currentCount + 1);
+      log.debug(`Queued ${emoji} (total pending: ${currentCount + 1})`);
+
+      // Schedule batch flush
+      scheduleBatchFlush();
+
+      // Trigger button press animation
+      setPressedEmoji(emoji);
+      if (pressedTimeoutRef.current) {
+        clearTimeout(pressedTimeoutRef.current);
+      }
+      pressedTimeoutRef.current = setTimeout(() => setPressedEmoji(null), 200);
+    },
+    [isEnabled, clickCooldownMs, scheduleBatchFlush]
+  );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (batchTimerRef.current) {
+        clearTimeout(batchTimerRef.current);
+        // Flush any pending on unmount
+        flushReactions();
+      }
+      if (pressedTimeoutRef.current) {
+        clearTimeout(pressedTimeoutRef.current);
+      }
+    };
+  }, [flushReactions]);
+
+  return (
+    <footer
+        className={cn(
+          "fixed bottom-0 inset-x-0 z-40 safe-area-inset-bottom",
+          "bg-gradient-to-t from-amber-950/95 via-amber-950/90 to-transparent",
+          "backdrop-blur-sm pt-6 pb-4 px-4",
+          className
+        )}
+      >
+        {/* Reaction buttons */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
+          {REACTION_EMOJIS.map((emoji, index) => (
+            <motion.button
+              key={emoji}
+              onClick={() => handleReact(emoji)}
+              disabled={!isEnabled}
+              whileTap={isEnabled ? { scale: 0.85 } : undefined}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                scale: pressedEmoji === emoji ? 1.15 : 1,
+              }}
+              transition={{ 
+                delay: index * 0.05,
+                scale: { duration: 0.1 },
+              }}
+              className={cn(
+                "relative text-2xl sm:text-3xl p-2 sm:p-3 rounded-full",
+                "transition-colors duration-100",
+                "focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-2 focus:ring-offset-amber-950",
+                isEnabled
+                  ? "hover:bg-amber-800/50 cursor-pointer"
+                  : "opacity-50 cursor-not-allowed"
+              )}
+              style={{
+                textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+              }}
+              aria-label={t("reactWith", { emoji })}
+              aria-disabled={!isEnabled}
+            >
+              {emoji}
+
+              {/* Ripple ring on press */}
+              <AnimatePresence>
+                {pressedEmoji === emoji && (
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0.6 }}
+                    animate={{ scale: 1.8, opacity: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-full border-2 border-amber-400"
+                  />
+                )}
+              </AnimatePresence>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Keyboard hint (desktop only) */}
+        <div className="hidden sm:flex justify-center mt-3 gap-4 text-[10px] text-amber-500/40">
+          {REACTION_EMOJIS.map((emoji, index) => (
+            <span key={emoji} className="font-mono">
+              {index + 1}
+            </span>
+          ))}
+        </div>
+      </footer>
+  );
+}
+
+export default ReactionBar;
+
