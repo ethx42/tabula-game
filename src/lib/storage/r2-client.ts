@@ -1,80 +1,21 @@
 /**
  * Cloudflare R2 Storage Configuration
  *
- * Provides configuration for Cloudflare R2 storage.
- * For reading public files, only NEXT_PUBLIC_R2_PUBLIC_URL is required.
- *
- * Environment Variables:
- * - Client and Server (for reading public files):
- *   - NEXT_PUBLIC_R2_PUBLIC_URL: Public URL of your R2 bucket (e.g., https://pub-xxxxx.r2.dev)
- *
- * - Server-side only (for uploads, optional):
- *   - R2_ACCOUNT_ID: Your Cloudflare account ID
- *   - R2_ACCESS_KEY_ID: R2 API token access key
- *   - R2_SECRET_ACCESS_KEY: R2 API token secret key
- *   - R2_BUCKET_NAME: Name of your R2 bucket
+ * Minimal configuration for reading public files from R2.
+ * Only requires NEXT_PUBLIC_R2_PUBLIC_URL environment variable.
  *
  * @module lib/storage/r2-client
  */
 
-// ============================================================================
-// CLIENT AND SERVER (for reading public URLs)
-// ============================================================================
-
 /**
- * Public URL for R2 bucket (without bucket name).
+ * Public URL for R2 bucket.
  * Example: "https://pub-xxxxx.r2.dev"
  */
 export const R2_PUBLIC_URL = process.env.NEXT_PUBLIC_R2_PUBLIC_URL || "";
 
 /**
- * R2 bucket name from environment (for server-side uploads).
- */
-export const R2_BUCKET_NAME =
-  process.env.NEXT_PUBLIC_R2_BUCKET_NAME || process.env.R2_BUCKET_NAME || "";
-
-/**
- * Check if R2 public URL is configured (for reading images/catalog).
- * This can work on both client and server.
- * Only requires the public URL - bucket name is not needed for public URLs.
+ * Check if R2 is configured for reading public files.
  */
 export function isR2Configured(): boolean {
   return !!R2_PUBLIC_URL;
 }
-
-// ============================================================================
-// SERVER-SIDE ONLY (for uploads)
-// ============================================================================
-
-/**
- * Check if R2 upload capability is configured (server-side only).
- * Returns true only if all required environment variables are set.
- */
-export function isR2UploadConfigured(): boolean {
-  if (typeof window !== "undefined") {
-    return false; // Never available on client
-  }
-
-  return !!(
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    R2_BUCKET_NAME
-  );
-}
-
-/**
- * Gets the R2 endpoint URL for AWS SDK operations.
- * Only available on server-side when R2 upload is configured.
- */
-export function getR2EndpointUrl(): string | null {
-  if (!isR2UploadConfigured()) {
-    return null;
-  }
-
-  const accountId = process.env.R2_ACCOUNT_ID;
-  return `https://${accountId}.r2.cloudflarestorage.com`;
-}
-
-// NOTE: getR2Client() for uploads will be added when @aws-sdk/client-s3 is installed.
-// Currently only public URL reading is supported.

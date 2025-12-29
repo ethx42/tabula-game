@@ -6,15 +6,6 @@
  * @module lib/storage
  */
 
-export {
-  R2_BUCKET_NAME,
-  R2_PUBLIC_URL,
-  isR2Configured,
-  isR2UploadConfigured,
-} from "./r2-client";
+export { R2_PUBLIC_URL, isR2Configured } from "./r2-client";
 
-export {
-  getImageUrl,
-  resolveImageUrl,
-  isR2Url,
-} from "./image-url";
+export { getImageUrl, resolveImageUrl, isR2Url } from "./image-url";
