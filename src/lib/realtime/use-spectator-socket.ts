@@ -52,6 +52,8 @@ export interface SpectatorGameState {
   readonly historyCount: number;
   /** Whether the current card is flipped (showing longText) */
   readonly isFlipped?: boolean;
+  /** Whether the detailed text accordion is expanded */
+  readonly isDetailedExpanded?: boolean;
   /** Full history (when available) */
   readonly history?: StateUpdatePayload["history"];
 }
@@ -240,7 +242,15 @@ export function useSpectatorSocket(
             historyCount: message.payload.historyCount,
             history: message.payload.history,
             isFlipped: message.payload.isFlipped,
+            isDetailedExpanded: message.payload.isDetailedExpanded,
           });
+          break;
+
+        // v4.0: Toggle detailed text from Controller/Host
+        case "TOGGLE_DETAILED":
+          setGameState((prev) =>
+            prev ? { ...prev, isDetailedExpanded: message.isExpanded } : prev
+          );
           break;
 
         case "SPECTATOR_COUNT":

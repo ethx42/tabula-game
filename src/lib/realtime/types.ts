@@ -145,6 +145,26 @@ export interface ResetGameMessage {
   readonly type: "RESET_GAME";
 }
 
+/**
+ * Controller or Host requests to flip the current card (show/hide longText).
+ * Bidirectional sync - when either side flips, the other syncs.
+ * @direction Controller→S→Host OR Host→S→Controller (via STATE_UPDATE)
+ */
+export interface FlipCardMessage {
+  readonly type: "FLIP_CARD";
+  readonly isFlipped: boolean;
+}
+
+/**
+ * Controller or Host toggles the detailed text accordion (show/hide detailedText).
+ * Bidirectional sync - Controller can emit, Host/Spectator can override locally.
+ * @direction Controller→S→Host/Spectator OR Host→S→Controller (via STATE_UPDATE)
+ */
+export interface ToggleDetailedMessage {
+  readonly type: "TOGGLE_DETAILED";
+  readonly isExpanded: boolean;
+}
+
 // ============================================================================
 // STATE UPDATE MESSAGES (Host → Controller via Server)
 // ============================================================================
@@ -178,6 +198,12 @@ export interface StateUpdatePayload {
    * Used for bidirectional sync between Host and Controller.
    */
   readonly isHistoryOpen?: boolean;
+
+  /**
+   * Whether the detailed text accordion is expanded (v4.0).
+   * Used for sync between Controller → Host/Spectator.
+   */
+  readonly isDetailedExpanded?: boolean;
 
   /**
    * Full history data (v4.0).
@@ -430,6 +456,8 @@ export type WSMessage =
   | PauseGameMessage
   | ResumeGameMessage
   | ResetGameMessage
+  | FlipCardMessage
+  | ToggleDetailedMessage
   // State Updates
   | StateUpdateMessage
   | FullStateSyncMessage
@@ -452,6 +480,7 @@ export type WSMessage =
 export type HostMessage =
   | CreateRoomMessage
   | StateUpdateMessage
+  | ToggleDetailedMessage
   | OpenHistoryMessage
   | CloseHistoryMessage
   | SoundPreferenceMessage
@@ -466,6 +495,8 @@ export type ControllerMessage =
   | PauseGameMessage
   | ResumeGameMessage
   | ResetGameMessage
+  | FlipCardMessage
+  | ToggleDetailedMessage
   | OpenHistoryMessage
   | CloseHistoryMessage
   | PingMessage;
@@ -520,6 +551,8 @@ const VALID_MESSAGE_TYPES = new Set([
   "PAUSE_GAME",
   "RESUME_GAME",
   "RESET_GAME",
+  "FLIP_CARD",
+  "TOGGLE_DETAILED",
   // State Updates
   "STATE_UPDATE",
   "FULL_STATE_SYNC",
@@ -559,12 +592,14 @@ export function isGameCommand(
   | DrawCardMessage
   | PauseGameMessage
   | ResumeGameMessage
-  | ResetGameMessage {
+  | ResetGameMessage
+  | FlipCardMessage {
   return (
     msg.type === "DRAW_CARD" ||
     msg.type === "PAUSE_GAME" ||
     msg.type === "RESUME_GAME" ||
-    msg.type === "RESET_GAME"
+    msg.type === "RESET_GAME" ||
+    msg.type === "FLIP_CARD"
   );
 }
 
@@ -662,6 +697,13 @@ export function resetGameMessage(): ResetGameMessage {
 }
 
 /**
+ * Creates a FLIP_CARD message.
+ */
+export function flipCardMessage(isFlipped: boolean): FlipCardMessage {
+  return { type: "FLIP_CARD", isFlipped };
+}
+
+/**
  * Creates a STATE_UPDATE message.
  */
 export function stateUpdateMessage(
@@ -693,6 +735,15 @@ export function openHistoryMessage(): OpenHistoryMessage {
  */
 export function closeHistoryMessage(): CloseHistoryMessage {
   return { type: "CLOSE_HISTORY" };
+}
+
+/**
+ * Creates a TOGGLE_DETAILED message.
+ */
+export function toggleDetailedMessage(
+  isExpanded: boolean
+): ToggleDetailedMessage {
+  return { type: "TOGGLE_DETAILED", isExpanded };
 }
 
 /**

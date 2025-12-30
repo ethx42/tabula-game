@@ -16,13 +16,14 @@
  * @see SRD §5.2 Remote Controller Layout
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { ChevronDown, ChevronUp, Sparkles, BookOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ItemDefinition } from "@/lib/types/game";
 import { resolveImageUrl } from "@/lib/storage/image-url";
+import { DetailedTextAccordion } from "./detailed-text-accordion";
 
 // ============================================================================
 // TYPES
@@ -37,6 +38,14 @@ interface ControllerCurrentCardProps {
   totalCards: number;
   /** Whether reduced motion is preferred */
   reducedMotion?: boolean;
+  /** External flip state from host (for sync) */
+  hostFlipState?: boolean;
+  /** Callback when flip state changes (to broadcast to host) */
+  onFlipChange?: (isFlipped: boolean) => void;
+  /** External detailed text state from host (for sync) */
+  hostDetailedState?: boolean;
+  /** Callback when detailed text expansion changes (to broadcast to host) */
+  onDetailedChange?: (isExpanded: boolean) => void;
 }
 
 // ============================================================================
@@ -99,18 +108,54 @@ export function ControllerCurrentCard({
   cardNumber,
   totalCards,
   reducedMotion = false,
+  hostFlipState,
+  onFlipChange,
+  hostDetailedState,
+  onDetailedChange,
 }: ControllerCurrentCardProps) {
   const t = useTranslations("game");
   const tHistory = useTranslations("history");
+  const tDeepDive = useTranslations("deepDive");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDetailedExpanded, setIsDetailedExpanded] = useState(false);
+
+  // Sync with host flip state when it changes
+  useEffect(() => {
+    if (hostFlipState !== undefined) {
+      setIsExpanded(hostFlipState);
+    }
+  }, [hostFlipState]);
+
+  // Sync with host detailed state when it changes
+  useEffect(() => {
+    if (hostDetailedState !== undefined) {
+      setIsDetailedExpanded(hostDetailedState);
+    }
+  }, [hostDetailedState]);
 
   const handleToggleExpand = useCallback(() => {
-    setIsExpanded((prev) => !prev);
-  }, []);
+    const newState = !isExpanded;
+    setIsExpanded(newState);
+    // Notify parent (to broadcast to host)
+    if (onFlipChange) {
+      onFlipChange(newState);
+    }
+  }, [isExpanded, onFlipChange]);
+
+  // Toggle detailed text accordion
+  const handleDetailedToggle = useCallback(() => {
+    const newState = !isDetailedExpanded;
+    setIsDetailedExpanded(newState);
+    // Notify parent (to broadcast to host/spectator)
+    if (onDetailedChange) {
+      onDetailedChange(newState);
+    }
+  }, [isDetailedExpanded, onDetailedChange]);
 
   // Reset expanded state when card changes
   const handleCardChange = useCallback(() => {
     setIsExpanded(false);
+    setIsDetailedExpanded(false);
   }, []);
 
   return (
@@ -135,7 +180,11 @@ export function ControllerCurrentCard({
               onClick={handleToggleExpand}
               className="w-full text-left focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-amber-950 rounded-2xl"
               aria-expanded={isExpanded}
-              aria-label={`${item.name}. ${isExpanded ? tHistory("tapToCollapse") : tHistory("tapForDetails")}`}
+              aria-label={`${item.name}. ${
+                isExpanded
+                  ? tHistory("tapToCollapse")
+                  : tHistory("tapForDetails")
+              }`}
             >
               {/* Main Card */}
               <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-800/60 to-amber-900/60 shadow-xl ring-2 ring-amber-400/50 backdrop-blur-sm">
@@ -153,7 +202,7 @@ export function ControllerCurrentCard({
                       sizes="(max-width: 640px) 100vw, 384px"
                       priority
                     />
-                    
+
                     {/* Gradient overlay for text legibility */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                   </div>
@@ -189,7 +238,11 @@ export function ControllerCurrentCard({
                 {/* Content Section */}
                 <div className="p-4">
                   {/* Short Text - Always Visible */}
-                  <p className={`text-sm leading-relaxed text-amber-100/90 ${isExpanded ? "" : "line-clamp-2"}`}>
+                  <p
+                    className={`text-sm leading-relaxed text-amber-100/90 ${
+                      isExpanded ? "" : "line-clamp-2"
+                    }`}
+                  >
                     {item.shortText}
                   </p>
 
@@ -209,6 +262,18 @@ export function ControllerCurrentCard({
                             {item.longText}
                           </p>
                         </div>
+
+                        {/* Detailed Text Accordion */}
+                        {item.detailedText && (
+                          <DetailedTextAccordion
+                            detailedText={item.detailedText}
+                            isExpanded={isDetailedExpanded}
+                            onToggle={handleDetailedToggle}
+                            themeColor={item.themeColor || "#d97706"}
+                            expandText={tDeepDive("expand")}
+                            collapseText={tDeepDive("collapse")}
+                          />
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -264,7 +329,7 @@ export function ControllerCurrentCard({
                     />
                   </svg>
                 </div>
-                
+
                 {/* Text */}
                 <p className="font-serif text-lg font-medium text-amber-300/60">
                   {t("card.noCard")}
@@ -282,4 +347,3 @@ export function ControllerCurrentCard({
 }
 
 export default ControllerCurrentCard;
-

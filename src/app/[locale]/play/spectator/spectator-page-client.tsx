@@ -296,6 +296,7 @@ export default function SpectatorPageClient() {
   const router = useRouter();
   const t = useTranslations("spectator");
   const tGame = useTranslations("game");
+  const tDeepDive = useTranslations("deepDive");
 
   // Get room ID from URL
   const roomId = searchParams?.get("room") ?? null;
@@ -351,6 +352,42 @@ export default function SpectatorPageClient() {
   // Handle spectator clicking to flip (local override)
   const handleLocalFlip = useCallback((newFlipState: boolean) => {
     setLocalFlipOverride(newFlipState);
+  }, []);
+
+  // ==========================================================================
+  // SYNC + OVERRIDE DETAILED TEXT PATTERN
+  // ==========================================================================
+
+  // Local detailed state: null = synced with host, boolean = local override
+  const [localDetailedOverride, setLocalDetailedOverride] = useState<
+    boolean | null
+  >(null);
+
+  // Host's detailed state from server
+  const hostDetailedState = gameState?.isDetailedExpanded ?? false;
+
+  // Effective detailed state: use local override if set, otherwise host state
+  const effectiveDetailedState =
+    localDetailedOverride !== null ? localDetailedOverride : hostDetailedState;
+
+  // Is the spectator's detailed view different from what host is showing?
+  const isDetailedOutOfSync =
+    localDetailedOverride !== null &&
+    localDetailedOverride !== hostDetailedState;
+
+  // Reset local detailed override when card changes (resync with host)
+  useEffect(() => {
+    if (currentItemId !== previousItemIdRef.current) {
+      // New card - reset local detailed override using queueMicrotask
+      queueMicrotask(() => {
+        setLocalDetailedOverride(null);
+      });
+    }
+  }, [currentItemId]);
+
+  // Handle spectator clicking to toggle detailed text (local override)
+  const handleLocalDetailedToggle = useCallback((newState: boolean) => {
+    setLocalDetailedOverride(newState);
   }, []);
 
   // ==========================================================================
@@ -614,7 +651,7 @@ export default function SpectatorPageClient() {
             >
               {/* Card + Text Layout - Responsive */}
               <div className="flex flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center lg:gap-10">
-                {/* Card - syncs with host but allows local flip override */}
+                {/* Card - syncs with host but allows local flip/detailed override */}
                 {/* Use "large" size on mobile/tablet where TextPanel is hidden */}
                 <CurrentCard
                   item={gameState?.currentItem ?? null}
@@ -633,11 +670,17 @@ export default function SpectatorPageClient() {
                 <div className="hidden lg:block">
                   <TextPanel
                     item={gameState?.currentItem ?? null}
-                    currentNumber={currentCard}
-                    totalCards={totalCards}
-                    showCounter={false}
                     showCategory={true}
                     className="w-full max-w-md"
+                    isDetailedExpanded={effectiveDetailedState}
+                    onDetailedChange={handleLocalDetailedToggle}
+                    isDetailedLocalOverride={isDetailedOutOfSync}
+                    detailedTexts={{
+                      expand: tDeepDive("expand"),
+                      collapse: tDeepDive("collapse"),
+                      syncedFromController: tDeepDive("syncedFromController"),
+                      localOverride: tDeepDive("localOverride"),
+                    }}
                   />
                 </div>
               </div>

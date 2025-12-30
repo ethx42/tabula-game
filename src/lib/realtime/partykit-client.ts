@@ -22,10 +22,12 @@ import {
   pauseGameMessage,
   resumeGameMessage,
   resetGameMessage,
+  flipCardMessage,
   stateUpdateMessage,
   pingMessage,
   openHistoryMessage,
   closeHistoryMessage,
+  toggleDetailedMessage,
   soundPreferenceMessage,
 } from "./types";
 import { createDevLogger } from "@/lib/utils/dev-logger";
@@ -98,6 +100,8 @@ export interface GameSocketActions {
   resumeGame: () => void;
   /** Send RESET_GAME command (controller only) */
   resetGame: () => void;
+  /** Send FLIP_CARD command to sync card flip state (controller only) */
+  flipCard: (isFlipped: boolean) => void;
 
   // Host actions
   /** Send state update to controller (host only) */
@@ -108,6 +112,10 @@ export interface GameSocketActions {
   openHistory: () => void;
   /** Close history modal on all connected clients */
   closeHistory: () => void;
+
+  // v4.0: Detailed text toggle (bidirectional)
+  /** Toggle detailed text accordion on all connected clients */
+  toggleDetailed: (isExpanded: boolean) => void;
 
   // v4.0: Sound preference sync
   /** Broadcast sound preference change to other party */
@@ -558,6 +566,10 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
     sendCommand(resetGameMessage());
   }, [sendCommand]);
 
+  const flipCard = useCallback((isFlipped: boolean) => {
+    sendCommand(flipCardMessage(isFlipped));
+  }, [sendCommand]);
+
   // ==========================================================================
   // STATE SENDER (Host)
   // ==========================================================================
@@ -602,6 +614,24 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
     log("Sending: CLOSE_HISTORY");
     socketRef.current.send(serializeMessage(closeHistoryMessage()));
   }, [log]);
+
+  // ==========================================================================
+  // v4.0: DETAILED TEXT TOGGLE SYNC
+  // ==========================================================================
+
+  const toggleDetailed = useCallback(
+    (isExpanded: boolean) => {
+      if (socketRef.current?.readyState !== WebSocket.OPEN) {
+        log("Cannot send, not connected");
+        return;
+      }
+      log("Sending: TOGGLE_DETAILED", isExpanded);
+      socketRef.current.send(
+        serializeMessage(toggleDetailedMessage(isExpanded))
+      );
+    },
+    [log]
+  );
 
   // ==========================================================================
   // v4.0: SOUND PREFERENCE SYNC
@@ -676,6 +706,7 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
       pauseGame,
       resumeGame,
       resetGame,
+      flipCard,
 
       // Host commands
       sendStateUpdate,
@@ -683,6 +714,9 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
       // v4.0: History modal sync (bidirectional)
       openHistory,
       closeHistory,
+
+      // v4.0: Detailed text toggle (bidirectional)
+      toggleDetailed,
 
       // v4.0: Sound preference sync
       sendSoundPreference,
@@ -699,9 +733,11 @@ export function useGameSocket(config: GameSocketConfig): UseGameSocketReturn {
       pauseGame,
       resumeGame,
       resetGame,
+      flipCard,
       sendStateUpdate,
       openHistory,
       closeHistory,
+      toggleDetailed,
       sendSoundPreference,
       sendSoundPreferenceAck,
       onMessage,

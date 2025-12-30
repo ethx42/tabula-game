@@ -101,6 +101,15 @@
     "connectionFailed": "Could not connect. Check the code.",
     "hostDisconnected": "Host disconnected"
   },
+  "deepDive": {
+    "expand": "Read more",
+    "collapse": "Show less",
+    "syncedFromController": "Expanded by controller",
+    "localOverride": "Personal view"
+  },
+  "textPanel": {
+    "drawPrompt": "Draw a card to see its story"
+  },
   "history": {
     "title": "Card History",
     "cardsPlayed": "{count, plural, =1 {1 card played} other {# cards played}}",
@@ -152,6 +161,7 @@
     "status": "Board Status",
     "complete": "{count, plural, =1 {1 board complete} other {# boards complete}}",
     "almostComplete": "{count, plural, =1 {1 board almost ready} other {# boards almost ready}}",
+    "leadingBoard": "Board #{number}: {percent}%",
     "remaining": "{count} remaining",
     "winner": "Winner!"
   },
@@ -167,15 +177,167 @@
   "generator": {
     "title": "Board Generator",
     "steps": {
+      "players": "Players",
+      "board": "Grid",
       "items": "Items",
-      "board": "Board",
-      "distribution": "Distribution",
+      "distribution": "Review",
       "preview": "Preview",
       "export": "Export"
     },
     "next": "Next",
     "previous": "Previous",
-    "generate": "Generate Boards"
+    "generate": "Generate Boards",
+    "players": {
+      "title": "How many will play?",
+      "description": "Each player gets a unique board. Start by telling us your group size.",
+      "playersLabel": "Players",
+      "small": "Small group",
+      "medium": "Medium event",
+      "large": "Large event",
+      "custom": "Custom",
+      "hint": {
+        "title": "For {count} players:",
+        "description": "We'll calculate the ideal number of items for an engaging experience."
+      }
+    },
+    "board": {
+      "title": "Choose Board Size",
+      "description": "Select the grid size for your {players} players.",
+      "itemsPerBoard": "items each",
+      "customSize": "Use custom size",
+      "rows": "Rows",
+      "columns": "Cols",
+      "forPlayers": "For {count} players",
+      "recommendation": {
+        "intro": "With {slots} items per board, here's what you need:"
+      },
+      "recommended": "Recommended",
+      "items": "items",
+      "playersMarkEach": "mark each",
+      "moreItems": "More items",
+      "moreVariety": "More variety",
+      "advanced": "Advanced options",
+      "seed": {
+        "title": "Reproducibility Seed",
+        "optional": "optional",
+        "description": "Enter a seed to reproduce the exact same boards."
+      }
+    },
+    "preview": {
+      "success": "Generation complete!",
+      "boardsReady": "boards ready",
+      "regenerate": "Regenerate with new seed",
+      "noBoards": "No boards generated yet.",
+      "tryAgain": "Try again",
+      "board": "Board",
+      "close": "Close",
+      "showStats": "Show statistics",
+      "hideStats": "Hide statistics",
+      "stats": {
+        "time": "Generation time",
+        "maxOverlap": "Max overlap",
+        "avgOverlap": "Avg overlap",
+        "seed": "Seed (copy)"
+      }
+    },
+    "items": {
+      "title": "Add Your Items",
+      "description": "Add {target}+ items for a balanced experience with {players} players.",
+      "tier": {
+        "chaotic": "Chaotic",
+        "competitive": "Competitive",
+        "balanced": "Balanced",
+        "diverse": "Diverse"
+      },
+      "playersMarkEachItem": "players mark each item",
+      "items": "items",
+      "competitive": "Competitive",
+      "balanced": "Balanced",
+      "diverse": "Diverse",
+      "loadDefaults": "Load Example Items",
+      "placeholder": "Enter items here...\n\nExamples:\nEl Gallo\nLa Dama, El Sol, La Luna\n\"Item with, comma\"",
+      "itemsValid": "items valid",
+      "invalidInput": "Invalid input",
+      "duplicatesRemoved": "duplicates removed",
+      "needMore": "Need {count} more items",
+      "preview": "Preview ({count} items)",
+      "more": "more"
+    },
+    "review": {
+      "title": "Review Your Setup",
+      "description": "Everything looks great! Here's a summary before we generate.",
+      "ready": "Ready to Generate",
+      "notReady": "Configuration Needs Adjustments",
+      "summary": {
+        "title": "Game Summary",
+        "players": "{count, plural, =1 {player} other {players}}",
+        "boards": "{count, plural, =1 {1 unique board} other {# unique boards}}",
+        "grid": "board",
+        "slotsPerBoard": "{count} slots",
+        "totalItems": "{count, plural, =1 {card} other {cards}}"
+      },
+      "experience": {
+        "title": "Game Experience",
+        "headline": "When you call a card...",
+        "willMark": "{count} of {total} players",
+        "willMarkAction": "will have it on their board",
+        "tier": {
+          "chaotic": "Chaotic",
+          "competitive": "Fast-Paced",
+          "balanced": "Balanced",
+          "diverse": "Strategic"
+        },
+        "tierDescription": {
+          "chaotic": "Many shout \"Got it!\" — very fast games",
+          "competitive": "Good competition — exciting races",
+          "balanced": "Ideal balance — not too fast, not too slow",
+          "diverse": "Each card feels special and unique"
+        }
+      },
+      "distribution": {
+        "title": "Distribution",
+        "frequency": "×{count}",
+        "items": "{count, plural, =1 {1 item} other {# items}}",
+        "appearances": "Total appearances",
+        "slots": "Required slots"
+      },
+      "validation": {
+        "title": "Validations",
+        "allPassed": "All checks passed",
+        "issuesFound": "{count, plural, =1 {1 issue} other {# issues}} found",
+        "slot_balance": "Slots covered",
+        "min_items": "Enough items",
+        "min_frequency": "All items appear",
+        "max_frequency": "No over-repetition",
+        "feasibility": "Valid config",
+        "unique_boards": "Unique boards",
+        "overlap_quality": "Diversity"
+      },
+      "details": {
+        "show": "Show details",
+        "hide": "Hide details",
+        "total": "Total",
+        "slots": "Slots"
+      },
+      "suggestion": "Suggestion"
+    },
+    "export": {
+      "title": "Export Boards",
+      "ready": "Ready to use!",
+      "noBoards": "No boards to export. Go back and generate boards first.",
+      "boards": "boards",
+      "items": "items",
+      "downloadJSON": "Download JSON",
+      "jsonDescription": "Complete format with all data",
+      "csv": "CSV",
+      "print": "Print",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "showMore": "More options",
+      "hideMore": "Less options",
+      "saveToBrowser": "Save to browser",
+      "browserDescription": "For offline use later"
+    }
   },
   "language": {
     "switch": "Switch language",

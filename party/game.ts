@@ -137,6 +137,16 @@ interface ResetGameMessage extends BaseMessage {
   type: "RESET_GAME";
 }
 
+interface FlipCardMessage extends BaseMessage {
+  type: "FLIP_CARD";
+  isFlipped: boolean;
+}
+
+interface ToggleDetailedMessage extends BaseMessage {
+  type: "TOGGLE_DETAILED";
+  isExpanded: boolean;
+}
+
 // State Updates (from Host)
 // v4.0: Added history array for late-joining spectators
 interface StateUpdateMessage extends BaseMessage {
@@ -196,6 +206,8 @@ type IncomingMessage =
   | PauseGameMessage
   | ResumeGameMessage
   | ResetGameMessage
+  | FlipCardMessage
+  | ToggleDetailedMessage
   | StateUpdateMessage
   | PingMessage
   // v4.0 messages
@@ -423,7 +435,13 @@ export default class GameRoom implements Server {
       case "PAUSE_GAME":
       case "RESUME_GAME":
       case "RESET_GAME":
+      case "FLIP_CARD":
         this.forwardToHost(msg, sender);
+        break;
+
+      // v4.0: Detailed text toggle (bidirectional Controller ↔ Host/Spectator)
+      case "TOGGLE_DETAILED":
+        this.handleToggleDetailed(msg as ToggleDetailedMessage, sender);
         break;
 
       // State updates from Host - forward to Controller (and spectators)
@@ -828,6 +846,72 @@ export default class GameRoom implements Server {
         sender.id === this.state.hostId ? "host" : "controller"
       }`
     );
+  }
+
+  // ==========================================================================
+  // v4.0: DETAILED TEXT TOGGLE HANDLER
+  // ==========================================================================
+
+  /**
+   * Handles TOGGLE_DETAILED message.
+   * Controller emits → Host and Spectators receive.
+   * Host can also emit → Controller receives.
+   * Spectators can override locally (handled client-side).
+   */
+  private handleToggleDetailed(
+    msg: ToggleDetailedMessage,
+    sender: Connection
+  ): void {
+    // Only Host or Controller can toggle
+    if (
+      sender.id !== this.state.hostId &&
+      sender.id !== this.state.controllerId
+    ) {
+      return; // Silently ignore from spectators (they handle locally)
+    }
+
+    // Controller sends → broadcast to Host and Spectators
+    if (sender.id === this.state.controllerId) {
+      // Send to Host
+      if (this.state.hostId) {
+        const host = this.room.getConnection(this.state.hostId);
+        send(host, msg);
+      }
+
+      // Send to all Spectators
+      for (const spectatorId of this.state.spectatorIds) {
+        const spectator = this.room.getConnection(spectatorId);
+        if (spectator) {
+          spectator.send(JSON.stringify(msg));
+        }
+      }
+
+      log.debug(
+        this.room.id,
+        `Detailed toggle broadcast from controller: isExpanded=${msg.isExpanded}`
+      );
+    }
+    // Host sends → forward to Controller (and optionally Spectators)
+    else if (sender.id === this.state.hostId) {
+      // Send to Controller
+      if (this.state.controllerId) {
+        const controller = this.room.getConnection(this.state.controllerId);
+        send(controller, msg);
+      }
+
+      // Send to all Spectators
+      for (const spectatorId of this.state.spectatorIds) {
+        const spectator = this.room.getConnection(spectatorId);
+        if (spectator) {
+          spectator.send(JSON.stringify(msg));
+        }
+      }
+
+      log.debug(
+        this.room.id,
+        `Detailed toggle broadcast from host: isExpanded=${msg.isExpanded}`
+      );
+    }
   }
 
   // ==========================================================================

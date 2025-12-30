@@ -52,6 +52,10 @@ interface ControllerGameState {
   status: GameStatus;
   historyCount: number;
   history: readonly ItemDefinition[];
+  /** Whether the current card is flipped (showing longText) - synced from Host */
+  isFlipped?: boolean;
+  /** Whether the detailed text accordion is expanded - synced from Host */
+  isDetailedExpanded?: boolean;
 }
 
 // ============================================================================
@@ -274,6 +278,7 @@ function JoinPageContent() {
             status: "ready",
             historyCount: 0,
             history: [],
+            isFlipped: false,
           },
         };
       });
@@ -329,6 +334,8 @@ function JoinPageContent() {
           historyCount: update.historyCount,
           // Ensure history is always an array (may be undefined in StateUpdatePayload)
           history: update.history ?? prev.gameState.history ?? [],
+          // Sync flip state from Host
+          isFlipped: update.isFlipped ?? false,
         },
       };
     });
@@ -374,6 +381,21 @@ function JoinPageContent() {
               : undefined,
         }));
         socket.disconnect();
+      }
+
+      // Handle detailed text toggle from Host
+      if (message.type === "TOGGLE_DETAILED") {
+        log.log(`Received detailed toggle from Host: isExpanded=${message.isExpanded}`);
+        setState((current) => {
+          if (current.status !== "connected") return current;
+          return {
+            ...current,
+            gameState: {
+              ...current.gameState,
+              isDetailedExpanded: message.isExpanded,
+            },
+          };
+        });
       }
     });
     return unsubscribe;
@@ -514,6 +536,18 @@ function JoinPageContent() {
     socket.drawCard();
   }, [socket, sound]);
 
+  // Handle card flip - send to Host for broadcast
+  const handleFlipChange = useCallback((isFlipped: boolean) => {
+    log.log(`Controller flip change: ${isFlipped}`);
+    socket.flipCard(isFlipped);
+  }, [socket]);
+
+  // Handle detailed text expansion - send to Host for broadcast
+  const handleDetailedChange = useCallback((isExpanded: boolean) => {
+    log.log(`Controller detailed change: ${isExpanded}`);
+    socket.toggleDetailed(isExpanded);
+  }, [socket]);
+
   // Toggle Host sound - invert current known state (default to true if unknown)
   // Optimistically update local state for immediate UI feedback
   const handleToggleHost = useCallback(() => {
@@ -598,6 +632,8 @@ function JoinPageContent() {
       onReset={socket.resetGame}
       onRetryConnection={handleRetryConnection}
       onDisconnect={handleTryDifferentCode}
+      onFlipChange={handleFlipChange}
+      onDetailedChange={handleDetailedChange}
       sound={{
         isLocalEnabled: sound.isEnabled,
         isHostEnabled: hostSoundEnabled,

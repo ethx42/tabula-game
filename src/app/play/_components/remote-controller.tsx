@@ -48,6 +48,10 @@ export interface ControllerGameState {
   historyCount: number;
   /** Full history of played cards (v4.0: for history modal) */
   history: readonly ItemDefinition[];
+  /** Whether the current card is flipped (showing longText) - synced from Host */
+  isFlipped?: boolean;
+  /** Whether the detailed text accordion is expanded - synced from Host */
+  isDetailedExpanded?: boolean;
 }
 
 /**
@@ -120,6 +124,12 @@ interface RemoteControllerProps {
 
   /** Callback to disconnect and go back */
   onDisconnect?: () => void;
+
+  /** Callback when card flip state changes (to broadcast to host) */
+  onFlipChange?: (isFlipped: boolean) => void;
+
+  /** Callback when detailed text expansion changes (to broadcast to host) */
+  onDetailedChange?: (isExpanded: boolean) => void;
 
   /** Whether reduced motion is preferred */
   reducedMotion?: boolean;
@@ -195,6 +205,8 @@ export function RemoteController({
   onReset,
   onRetryConnection,
   onDisconnect,
+  onFlipChange,
+  onDetailedChange,
   reducedMotion = false,
   sound,
   soundActions,
@@ -246,6 +258,10 @@ export function RemoteController({
           cardNumber={currentCard}
           totalCards={totalCards}
           reducedMotion={reducedMotion}
+          hostFlipState={gameState.isFlipped}
+          onFlipChange={onFlipChange}
+          hostDetailedState={gameState.isDetailedExpanded}
+          onDetailedChange={onDetailedChange}
         />
       </section>
 

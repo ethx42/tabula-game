@@ -101,6 +101,15 @@
     "connectionFailed": "No se pudo conectar. Verifica el código.",
     "hostDisconnected": "El anfitrión se desconectó"
   },
+  "deepDive": {
+    "expand": "Leer más",
+    "collapse": "Mostrar menos",
+    "syncedFromController": "Expandido por el control",
+    "localOverride": "Vista personal"
+  },
+  "textPanel": {
+    "drawPrompt": "Saca una carta para ver su historia"
+  },
   "history": {
     "title": "Historial de Cartas",
     "cardsPlayed": "{count, plural, =1 {1 carta jugada} other {# cartas jugadas}}",
@@ -152,6 +161,7 @@
     "status": "Estado de Tableros",
     "complete": "{count, plural, =1 {1 tablero completo} other {# tableros completos}}",
     "almostComplete": "{count, plural, =1 {1 tablero casi listo} other {# tableros casi listos}}",
+    "leadingBoard": "Tablero #{number}: {percent}%",
     "remaining": "{count} restantes",
     "winner": "¡Ganador!"
   },
@@ -167,15 +177,167 @@
   "generator": {
     "title": "Generador de Tableros",
     "steps": {
+      "players": "Jugadores",
+      "board": "Cuadrícula",
       "items": "Elementos",
-      "board": "Tablero",
-      "distribution": "Distribución",
+      "distribution": "Revisar",
       "preview": "Vista Previa",
       "export": "Exportar"
     },
     "next": "Siguiente",
     "previous": "Anterior",
-    "generate": "Generar Tableros"
+    "generate": "Generar Tableros",
+    "players": {
+      "title": "¿Cuántos van a jugar?",
+      "description": "Cada jugador recibe un tablero único. Comienza diciéndonos el tamaño de tu grupo.",
+      "playersLabel": "Jugadores",
+      "small": "Grupo pequeño",
+      "medium": "Evento mediano",
+      "large": "Evento grande",
+      "custom": "Otro",
+      "hint": {
+        "title": "Para {count} jugadores:",
+        "description": "Calcularemos la cantidad ideal de elementos para una experiencia entretenida."
+      }
+    },
+    "board": {
+      "title": "Elige el Tamaño del Tablero",
+      "description": "Selecciona el tamaño de cuadrícula para tus {players} jugadores.",
+      "itemsPerBoard": "elementos c/u",
+      "customSize": "Usar tamaño personalizado",
+      "rows": "Filas",
+      "columns": "Cols",
+      "forPlayers": "Para {count} jugadores",
+      "recommendation": {
+        "intro": "Con {slots} elementos por tablero, esto es lo que necesitas:"
+      },
+      "recommended": "Recomendado",
+      "items": "elementos",
+      "playersMarkEach": "marcan c/u",
+      "moreItems": "Más elementos",
+      "moreVariety": "Más variedad",
+      "advanced": "Opciones avanzadas",
+      "seed": {
+        "title": "Semilla de Reproducibilidad",
+        "optional": "opcional",
+        "description": "Ingresa una semilla para reproducir los mismos tableros."
+      }
+    },
+    "preview": {
+      "success": "¡Generación completa!",
+      "boardsReady": "tableros listos",
+      "regenerate": "Regenerar con nueva semilla",
+      "noBoards": "Aún no se han generado tableros.",
+      "tryAgain": "Intentar de nuevo",
+      "board": "Tablero",
+      "close": "Cerrar",
+      "showStats": "Ver estadísticas",
+      "hideStats": "Ocultar estadísticas",
+      "stats": {
+        "time": "Tiempo de generación",
+        "maxOverlap": "Máximo overlap",
+        "avgOverlap": "Overlap promedio",
+        "seed": "Semilla (copiar)"
+      }
+    },
+    "items": {
+      "title": "Agrega tus Elementos",
+      "description": "Agrega {target}+ elementos para una experiencia balanceada con {players} jugadores.",
+      "tier": {
+        "chaotic": "Caótico",
+        "competitive": "Competitivo",
+        "balanced": "Balanceado",
+        "diverse": "Diverso"
+      },
+      "playersMarkEachItem": "jugadores marcan cada elemento",
+      "items": "elementos",
+      "competitive": "Competitivo",
+      "balanced": "Balanceado",
+      "diverse": "Diverso",
+      "loadDefaults": "Cargar Elementos de Ejemplo",
+      "placeholder": "Ingresa elementos aquí...\n\nEjemplos:\nEl Gallo\nLa Dama, El Sol, La Luna\n\"Elemento con, coma\"",
+      "itemsValid": "elementos válidos",
+      "invalidInput": "Entrada inválida",
+      "duplicatesRemoved": "duplicados eliminados",
+      "needMore": "Necesitas {count} elementos más",
+      "preview": "Vista previa ({count} elementos)",
+      "more": "más"
+    },
+    "review": {
+      "title": "Revisa tu Configuración",
+      "description": "¡Todo se ve perfecto! Aquí tienes un resumen antes de generar.",
+      "ready": "Listo para Generar",
+      "notReady": "La Configuración Necesita Ajustes",
+      "summary": {
+        "title": "Resumen del Juego",
+        "players": "{count, plural, =1 {jugador} other {jugadores}}",
+        "boards": "{count, plural, =1 {1 tablero único} other {# tableros únicos}}",
+        "grid": "tablero",
+        "slotsPerBoard": "{count} casillas",
+        "totalItems": "{count, plural, =1 {ficha} other {fichas}}"
+      },
+      "experience": {
+        "title": "Experiencia de Juego",
+        "headline": "Cuando cantes una carta...",
+        "willMark": "{count} de {total} jugadores",
+        "willMarkAction": "la tendrán en su tablero",
+        "tier": {
+          "chaotic": "Caótico",
+          "competitive": "Dinámico",
+          "balanced": "Balanceado",
+          "diverse": "Estratégico"
+        },
+        "tierDescription": {
+          "chaotic": "Muchos gritan \"¡Ya!\" — juegos muy rápidos",
+          "competitive": "Buena competencia — carreras emocionantes",
+          "balanced": "Equilibrio ideal — ni muy rápido ni muy lento",
+          "diverse": "Cada carta se siente especial y única"
+        }
+      },
+      "distribution": {
+        "title": "Distribución",
+        "frequency": "×{count}",
+        "items": "{count, plural, =1 {1 elemento} other {# elementos}}",
+        "appearances": "Apariciones totales",
+        "slots": "Espacios requeridos"
+      },
+      "validation": {
+        "title": "Validaciones",
+        "allPassed": "Todas las verificaciones pasaron",
+        "issuesFound": "{count, plural, =1 {1 problema} other {# problemas}} encontrados",
+        "slot_balance": "Espacios cubiertos",
+        "min_items": "Elementos suficientes",
+        "min_frequency": "Todos aparecen",
+        "max_frequency": "Sin repetición excesiva",
+        "feasibility": "Configuración válida",
+        "unique_boards": "Tableros únicos",
+        "overlap_quality": "Diversidad"
+      },
+      "details": {
+        "show": "Ver detalles",
+        "hide": "Ocultar detalles",
+        "total": "Total",
+        "slots": "Casillas"
+      },
+      "suggestion": "Sugerencia"
+    },
+    "export": {
+      "title": "Exportar Tableros",
+      "ready": "¡Listos para usar!",
+      "noBoards": "No hay tableros para exportar. Vuelve y genera tableros primero.",
+      "boards": "tableros",
+      "items": "elementos",
+      "downloadJSON": "Descargar JSON",
+      "jsonDescription": "Formato completo con todos los datos",
+      "csv": "CSV",
+      "print": "Imprimir",
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "showMore": "Más opciones",
+      "hideMore": "Menos opciones",
+      "saveToBrowser": "Guardar en el navegador",
+      "browserDescription": "Para usar después sin conexión"
+    }
   },
   "language": {
     "switch": "Cambiar idioma",
