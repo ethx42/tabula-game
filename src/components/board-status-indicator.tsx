@@ -145,8 +145,12 @@ export function BoardStatusIndicator({
   const { completedBoards, almostCompleteBoards, topBoards } = predictions;
   const hasNotableBoards = completedBoards.length > 0 || almostCompleteBoards.length > 0;
 
-  // Don't render if no notable boards
-  if (!hasNotableBoards) return null;
+  // For debugging: always show the indicator in standalone mode
+  // This helps users track board progress from the start
+  const showAlways = topBoards.length > 0 && topBoards[0].percentComplete > 0;
+
+  // Don't render if no progress at all
+  if (!showAlways && !hasNotableBoards) return null;
 
   // Position classes
   const positionClasses = {
@@ -157,14 +161,24 @@ export function BoardStatusIndicator({
   };
 
   // Determine header text
-  const headerText = completedBoards.length > 0
-    ? `🎉 ${t("complete", { count: completedBoards.length })}`
-    : t("almostComplete", { count: almostCompleteBoards.length });
+  let headerText: string;
+  if (completedBoards.length > 0) {
+    headerText = `🎉 ${t("complete", { count: completedBoards.length })}`;
+  } else if (almostCompleteBoards.length > 0) {
+    headerText = t("almostComplete", { count: almostCompleteBoards.length });
+  } else if (topBoards.length > 0) {
+    // Show leading board progress
+    headerText = t("leadingBoard", { number: topBoards[0].number, percent: topBoards[0].percentComplete });
+  } else {
+    headerText = t("status");
+  }
 
-  // Boards to show in expanded view (prioritize complete, then almost)
+  // Boards to show in expanded view (prioritize complete, then almost, then top)
   const displayBoards = [
     ...completedBoards.slice(0, 3),
     ...almostCompleteBoards.slice(0, 3 - completedBoards.length),
+    // If no notable boards, show top 3 boards
+    ...(hasNotableBoards ? [] : topBoards.slice(0, 3).filter(b => b.percentComplete > 0)),
   ];
 
   return (

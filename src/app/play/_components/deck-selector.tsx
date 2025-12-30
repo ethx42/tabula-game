@@ -22,7 +22,8 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   loadDeckCatalog,
-  loadDeckFromCatalog,
+  getDeckEntry,
+  loadDeckFromManifestUrl,
   type DeckCatalogEntry,
 } from "@/lib/game/deck-catalog";
 import { loadDeckFromFile } from "@/lib/game/deck-loader";
@@ -37,8 +38,12 @@ import { Loader2, Upload, RefreshCw, AlertCircle } from "lucide-react";
 // ============================================================================
 
 export interface DeckSelectorProps {
-  /** Callback when a deck is selected */
-  onDeckSelect: (deck: DeckDefinition) => void;
+  /**
+   * Callback when a deck is selected.
+   * @param deck - The loaded deck definition
+   * @param manifestUrl - URL to the manifest.json (for loading boards.json)
+   */
+  onDeckSelect: (deck: DeckDefinition, manifestUrl?: string) => void;
   /** Optional callback for upload action */
   onUpload?: () => void;
   /** Whether to show upload option */
@@ -115,8 +120,15 @@ export function DeckSelector({
       setState({ status: "selecting", selectedDeckId: deckId });
 
       try {
-        const deck = await loadDeckFromCatalog(deckId);
-        onDeckSelect(deck);
+        // Get the catalog entry to access manifestUrl
+        const entry = await getDeckEntry(deckId);
+        if (!entry) {
+          throw new Error(`Deck "${deckId}" not found in catalog`);
+        }
+
+        const deck = await loadDeckFromManifestUrl(entry.manifestUrl);
+        // Pass manifestUrl for boards.json loading
+        onDeckSelect(deck, entry.manifestUrl);
       } catch (error) {
         const errorMessage =
           error instanceof Error

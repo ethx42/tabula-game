@@ -14,7 +14,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Check, Smartphone, Users } from "lucide-react";
 import { useState, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { devWarn } from "@/lib/utils/dev-logger";
 
 interface QRPairingProps {
@@ -34,20 +34,21 @@ export function QRPairing({
   isControllerConnected = false,
 }: QRPairingProps) {
   const t = useTranslations("pairing");
+  const locale = useLocale();
   const [copied, setCopied] = useState(false);
   const [copiedSpectator, setCopiedSpectator] = useState(false);
 
-  // Build the join URL for controller
+  // Build the join URL for controller (with locale prefix)
   const joinUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/play/join?room=${roomCode}`
-      : `/play/join?room=${roomCode}`;
+      ? `${window.location.origin}/${locale}/play/join?room=${roomCode}`
+      : `/${locale}/play/join?room=${roomCode}`;
 
-  // Build spectator URL
+  // Build spectator URL (with locale prefix)
   const spectatorUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/play/spectator?room=${roomCode}`
-      : `/play/spectator?room=${roomCode}`;
+      ? `${window.location.origin}/${locale}/play/spectator?room=${roomCode}`
+      : `/${locale}/play/spectator?room=${roomCode}`;
 
   const handleCopyCode = useCallback(async () => {
     try {

@@ -6,6 +6,7 @@
 
 // Host Display Components
 export { CurrentCard } from "./current-card";
+export { DetailedTextAccordion } from "./detailed-text-accordion";
 export { TextPanel } from "./text-panel";
 export { HistoryStrip } from "./history-strip";
 export { ControlsBar } from "./controls-bar";
