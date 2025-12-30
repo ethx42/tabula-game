@@ -45,16 +45,29 @@ interface GeneratorStore extends WizardState {
   loadDefaults: () => void;
 }
 
+/**
+ * Players-First Flow (UX Optimization)
+ * 
+ * The user's mental model:
+ * 1. "I have 15 guests coming" → players
+ * 2. "I want 4×4 boards" → grid  
+ * 3. System calculates: "You need 48-80 items for good experience"
+ * 4. User adds items with clear goal
+ * 
+ * Key insight: The metric that matters is
+ * "When an item is called, what fraction of players mark it?"
+ */
 const STEP_ORDER: WizardStep[] = [
-  "items",
-  "board",
-  "distribution",
-  "preview",
-  "export",
+  "players",      // 1. How many people will play?
+  "board",        // 2. What grid size?
+  "items",        // 3. Add items (with calculated recommendations)
+  "distribution", // 4. Fine-tune distribution
+  "preview",      // 5. Generate and preview
+  "export",       // 6. Download/save
 ];
 
 const initialState: WizardState = {
-  currentStep: "items",
+  currentStep: "players",
   config: DEFAULT_CONFIG,
   result: null,
   validations: [],
@@ -100,13 +113,18 @@ export const useGeneratorStore = create<GeneratorStore>((set, get) => ({
     if (isGenerating) return false;
 
     switch (currentStep) {
+      case "players":
+        // Must have at least 2 players
+        return config.numBoards >= 2;
+      case "board":
+        // Grid must be valid
+        return config.boardConfig.rows >= 2 && config.boardConfig.cols >= 2;
       case "items":
+        // Must have enough items to fill one board
         return (
           config.items.length >=
           config.boardConfig.rows * config.boardConfig.cols
         );
-      case "board":
-        return config.numBoards >= 1;
       case "distribution": {
         const errors = validations.filter(
           (v) => !v.isValid && v.severity === "error"
