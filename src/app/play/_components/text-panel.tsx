@@ -270,10 +270,11 @@ export function TextPanel({
                 <QuoteMark position="end" themeColor={themeColor} />
               </motion.div>
 
-
               {/* Detailed Text Accordion */}
               {item.detailedText && onDetailedChange && (
-                <motion.div variants={!reducedMotion ? itemVariants : undefined}>
+                <motion.div
+                  variants={!reducedMotion ? itemVariants : undefined}
+                >
                   <DetailedTextAccordion
                     detailedText={item.detailedText}
                     isExpanded={isDetailedExpanded}
@@ -288,7 +289,6 @@ export function TextPanel({
                   />
                 </motion.div>
               )}
-
             </motion.div>
 
             {/* Decorative corner element */}
